@@ -1,1 +1,4 @@
 .codex-project-id
+backups/
+build/
+pdoa-monitor

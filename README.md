@@ -1,89 +1,138 @@
 # pdoa-uwb-rpi
 
-Experimental repository for working with Decawave/Qorvo UWB modules on Raspberry Pi 5, with a focus on PDoA (Phase Difference of Arrival) measurements and angle-of-arrival estimation.
+Small Raspberry Pi 5 workspace for reading Decawave/Qorvo DWM1002 PDoA node reports over USB serial.
 
-## Goal
+The current setup is:
 
-The project aims to build a practical base for:
+- DWM1002 PDoA node connected to the Raspberry Pi 5 via `usb_module`;
+- flashed DWM1001/DWM1003-style tags running the Decawave PDoA tag firmware;
+- a C monitor that reads `/dev/ttyACM0` and shows one stable row per active tag.
 
-- driving one or more Decawave/Qorvo UWB transceivers from a Raspberry Pi 5;
-- collecting raw measurements for ranging, TDoA/PDoA, and radio debugging;
-- experimenting with antenna calibration and phase offsets;
-- estimating the direction/angle of arrival of a UWB tag;
-- keeping hardware access, measurement logic, and analysis tools clearly separated.
-
-This repository starts as a lab workspace: first reliable wiring and low-level reads, then algorithms and visualization.
-
-## Target Hardware
-
-Expected setup, to be confirmed during development:
-
-- Raspberry Pi 5;
-- SPI-compatible Decawave/Qorvo UWB module;
-- one or more UWB antennas for PDoA experiments;
-- stable 3.3 V power supply;
-- SPI plus GPIO wiring for reset, interrupt, and chip select.
-
-Possible chip/module families:
-
-- DW1000 / DWM1000;
-- DW3000 / DWM3000;
-- newer Qorvo modules compatible with phase measurements.
-
-## Planned Structure
-
-```text
-.
-├── README.md
-├── docs/              # hardware notes, wiring, calibration
-├── src/               # drivers and application logic
-├── tools/             # acquisition, logging, and analysis scripts
-├── data/              # local samples, ignored or versioned deliberately
-└── tests/             # unit tests and simulations
-```
-
-## Initial Plan
-
-1. Document the selected UWB module and Raspberry Pi 5 pinout.
-2. Enable SPI on Raspberry Pi OS and verify basic communication.
-3. Read chip identification registers.
-4. Implement a first packet/ranging acquisition path.
-5. Store reproducible logs in CSV/JSONL.
-6. Add phase/antenna calibration routines.
-7. Implement a first PDoA/AoA estimate.
-8. Add lightweight visualization or a real-time debug dashboard.
-
-## Raspberry Pi 5 Notes
-
-Before connecting hardware:
-
-- verify that the module uses 3.3 V logic and does not need level shifting;
-- check current draw and power stability;
-- enable SPI with `raspi-config` or an equivalent configuration method;
-- assign dedicated pins for `CS`, `RST`, and `IRQ`;
-- keep SPI wires short during the first tests.
-
-Example SPI bus check:
+## Build
 
 ```bash
-ls /dev/spidev*
+make
 ```
 
-## Status
+## Run On Raspberry Pi
 
-Initial phase. The repository currently contains starter documentation; drivers, tools, and tests will be added once the exact UWB module is selected.
+```bash
+./pdoa-monitor -d /dev/ttyACM0
+```
 
-## TODO
+Default output is a stable dashboard:
 
-- [ ] choose the reference UWB chip/module;
-- [ ] add Raspberry Pi 5 wiring diagram;
-- [ ] define the main language/runtime;
-- [ ] create the first SPI probe script;
-- [ ] document the log format;
-- [ ] collect first test datasets;
-- [ ] implement PDoA calibration;
-- [ ] validate angular estimation with a known setup.
+```text
+PDoA monitor - 4 active tags - 18:33:34
+age      tag                 seq   dist pdoa_deg    x_cm    y_cm  offset     temp
+0s       dw02                170     24      -98      24       0     226    52368
+1s       dev                 114     38     -130      32      20     220    32318
+0s       dw00                121     22     -120      20       9     169    32318
+0s       dw01                197     45      -92      45       0     208    42327
+```
 
-## License
+Use stream mode for raw logging/debugging:
 
-To be defined.
+```bash
+./pdoa-monitor -d /dev/ttyACM0 --stream
+```
+
+## Tag Config
+
+Tag labels are loaded from `config/tags.json`.
+
+Current tags:
+
+```json
+{
+  "tags": [
+    {
+      "a16": "1001",
+      "id": "013A6102C4350D9E",
+      "name": "dev"
+    },
+    {
+      "a16": "8103",
+      "id": "013A6102C3F58103",
+      "name": "dw00"
+    },
+    {
+      "a16": "1729",
+      "id": "013A6102C4351729",
+      "name": "dw01"
+    },
+    {
+      "a16": "8FB0",
+      "id": "013A6102C3F48FB0",
+      "name": "dw02"
+    }
+  ]
+}
+```
+
+`a16` is the short address configured on the DWM1002 node. `id` is the tag long address reported by the node. `name` is what the monitor displays.
+
+## Sync To Raspberry Pi
+
+The Raspberry Pi clone is expected at `/home/fra/pdoa-uwb-rpi`.
+
+```bash
+./scripts/sync-rpi.sh
+```
+
+Defaults:
+
+```bash
+RPI_HOST=fra@192.168.1.67
+RPI_DIR=/home/fra/pdoa-uwb-rpi
+```
+
+Override them if needed:
+
+```bash
+RPI_HOST=fra@raspberrypi.local RPI_DIR=/home/fra/pdoa-uwb-rpi ./scripts/sync-rpi.sh
+```
+
+## Flashing Tags
+
+The tag firmware used during setup is:
+
+```text
+/mnt/data/altro/antenne/_beta/Software/ARM_Hex/dwm1003_tag/dw_pdoa_tag.hex
+```
+
+Flash with SEGGER J-Link:
+
+```bash
+JLinkExe -device nRF52832_xxAA -if SWD -speed 4000 -autoconnect 1
+```
+
+Then in J-Link Commander:
+
+```text
+halt
+erase
+loadfile /mnt/data/altro/antenne/_beta/Software/ARM_Hex/dwm1003_tag/dw_pdoa_tag.hex
+r
+g
+q
+```
+
+After flashing, the DWM1002 reports the tag as `NewTag`. Add it to the node KList with:
+
+```text
+ADDTAG <long_id> <short_id> 2 64 0
+SAVE
+```
+
+## Report Fields
+
+The DWM1002 JSON `TWR` report includes:
+
+- `D`: range in centimeters;
+- `P`: raw PDoA value, shown as `pdoa_deg`;
+- `Xcm`, `Ycm`: node-estimated tag coordinates in centimeters;
+- `O`: clock offset in hundredths of ppm;
+- `X`, `Y`, `Z`: tag accelerometer values in mg.
+
+The firmware does not output a separate bearing/angle field. If needed, bearing can be derived from `Xcm` and `Ycm` in the monitor.
