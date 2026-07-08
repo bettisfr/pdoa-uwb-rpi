@@ -23,12 +23,11 @@ make
 Default output is a stable dashboard:
 
 ```text
-PDoA monitor - 4 active tags - 18:33:34
-age      tag                 seq   dist pdoa_deg    x_cm    y_cm  offset     temp
-0s       dw02                170     24      -98      24       0     226    52368
-1s       dev                 114     38     -130      32      20     220    32318
-0s       dw00                121     22     -120      20       9     169    32318
-0s       dw01                197     45      -92      45       0     208    42327
+PDoA monitor - 3 active tags - 18:48:12
+age      tag                 seq range_cm pdoa_deg    x_cm    y_cm  clk_ppm     t_us
+0s       dw00                121       22     -120      20       9     1.69    32318
+0s       dw01                197       45      -92      45       0     2.08    42327
+0s       dw02                170       24      -98      24       0     2.26    52368
 ```
 
 Use stream mode for raw logging/debugging:
@@ -46,11 +45,6 @@ Current tags:
 ```json
 {
   "tags": [
-    {
-      "a16": "1001",
-      "id": "013A6102C4350D9E",
-      "name": "dev"
-    },
     {
       "a16": "8103",
       "id": "013A6102C3F58103",
@@ -132,7 +126,8 @@ The DWM1002 JSON `TWR` report includes:
 - `D`: range in centimeters;
 - `P`: raw PDoA value, shown as `pdoa_deg`;
 - `Xcm`, `Ycm`: node-estimated tag coordinates in centimeters;
-- `O`: clock offset in hundredths of ppm;
+- `O`: clock offset in hundredths of ppm, shown as `clk_ppm = O / 100`;
+- `T`: timestamp inside the node superframe in microseconds, shown as `t_us`;
 - `X`, `Y`, `Z`: tag accelerometer values in mg.
 
 The firmware does not output a separate bearing/angle field. If needed, bearing can be derived from `Xcm` and `Ycm` in the monitor.

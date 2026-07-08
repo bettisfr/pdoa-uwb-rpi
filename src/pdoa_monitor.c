@@ -20,6 +20,7 @@
 #define DEFAULT_TAG_CONFIG "config/tags.json"
 #define MAX_PAYLOAD 4096
 #define MAX_TAGS 64
+#define TAG_STALE_SECONDS 5
 
 static volatile sig_atomic_t keep_running = 1;
 
@@ -56,6 +57,7 @@ struct twr_sample {
 
 struct tag_state {
     char a16[16];
+    char label[32];
     struct twr_sample sample;
     time_t updated_at;
     bool active;
@@ -332,7 +334,7 @@ static const char *find_json_string_in_object(const char *object_start, const ch
     return NULL;
 }
 
-static void tag_map_put(struct tag_map *map, const char *a16, const char *a64)
+static void tag_map_put(struct tag_map *map, const char *a16, const char *a64, bool overwrite)
 {
     if (a16[0] == '\0' || a64[0] == '\0') {
         return;
@@ -340,7 +342,9 @@ static void tag_map_put(struct tag_map *map, const char *a16, const char *a64)
 
     for (size_t i = 0; i < map->len; i++) {
         if (strcmp(map->entries[i].a16, a16) == 0) {
-            snprintf(map->entries[i].a64, sizeof(map->entries[i].a64), "%s", a64);
+            if (overwrite) {
+                snprintf(map->entries[i].a64, sizeof(map->entries[i].a64), "%s", a64);
+            }
             return;
         }
     }
@@ -405,7 +409,8 @@ static void load_config_tags(struct tag_map *map, const char *path)
         trim_string(name);
 
         if (a16[0] && id[0]) {
-            tag_map_put(map, a16, name[0] ? name : id);
+            tag_map_put(map, a16, name[0] ? name : id, true);
+            tag_map_put(map, id, name[0] ? name : id, true);
         }
 
         cursor = end + 1;
@@ -431,7 +436,7 @@ static void load_aliases(struct tag_map *map, const struct options *opts)
         char *a64 = sep + 1;
         trim_string(a16);
         trim_string(a64);
-        tag_map_put(map, a16, a64);
+        tag_map_put(map, a16, a64, true);
     }
 }
 
@@ -460,7 +465,7 @@ static void update_tag_map_from_payload(struct tag_map *map, const char *payload
 
         const char *after_a16 = find_string_after(after_a64, "a16", a16, sizeof(a16));
         if (after_a16) {
-            tag_map_put(map, a16, a64);
+            tag_map_put(map, a16, a64, false);
             cursor = after_a16;
         } else {
             cursor = after_a64;
@@ -488,8 +493,8 @@ static long long now_ms(void)
 
 static void print_header(void)
 {
-    printf("%-8s %-16s %6s %6s %8s %7s %7s %7s %8s\n",
-           "age", "tag", "seq", "dist", "pdoa_deg", "x_cm", "y_cm", "offset", "temp");
+    printf("%-8s %-16s %6s %8s %8s %7s %7s %8s %8s\n",
+           "age", "tag", "seq", "range_cm", "pdoa_deg", "x_cm", "y_cm", "clk_ppm", "t_us");
     fflush(stdout);
 }
 
@@ -514,10 +519,13 @@ static bool parse_twr_sample(const char *payload, struct twr_sample *sample)
     return true;
 }
 
-static void dashboard_update(struct dashboard *dashboard, const struct twr_sample *sample)
+static void dashboard_update(struct dashboard *dashboard, const struct tag_map *map, const struct twr_sample *sample)
 {
+    const char *label = tag_map_lookup(map, sample->a16);
+
     for (size_t i = 0; i < dashboard->len; i++) {
-        if (strcmp(dashboard->tags[i].a16, sample->a16) == 0) {
+        if (strcmp(dashboard->tags[i].label, label) == 0) {
+            snprintf(dashboard->tags[i].a16, sizeof(dashboard->tags[i].a16), "%s", sample->a16);
             dashboard->tags[i].sample = *sample;
             dashboard->tags[i].updated_at = time(NULL);
             dashboard->tags[i].active = true;
@@ -532,19 +540,39 @@ static void dashboard_update(struct dashboard *dashboard, const struct twr_sampl
 
     struct tag_state *state = &dashboard->tags[dashboard->len++];
     snprintf(state->a16, sizeof(state->a16), "%s", sample->a16);
+    snprintf(state->label, sizeof(state->label), "%s", label);
     state->sample = *sample;
     state->updated_at = time(NULL);
     state->active = true;
     dashboard->dirty = true;
 }
 
-static void dashboard_render(struct dashboard *dashboard, const struct tag_map *map)
+static void dashboard_render(struct dashboard *dashboard)
 {
     if (!dashboard->dirty) {
-        return;
+        time_t now = time(NULL);
+        for (size_t i = 0; i < dashboard->len; i++) {
+            if (now - dashboard->tags[i].updated_at > TAG_STALE_SECONDS) {
+                dashboard->dirty = true;
+                break;
+            }
+        }
+        if (!dashboard->dirty) {
+            return;
+        }
     }
 
     time_t now = time(NULL);
+
+    for (size_t i = 0; i < dashboard->len;) {
+        if (now - dashboard->tags[i].updated_at > TAG_STALE_SECONDS) {
+            memmove(&dashboard->tags[i], &dashboard->tags[i + 1],
+                    (dashboard->len - i - 1) * sizeof(dashboard->tags[i]));
+            dashboard->len--;
+        } else {
+            i++;
+        }
+    }
 
     printf("\033[H\033[J");
     printf("PDoA monitor - %zu active tag%s - %s\n",
@@ -554,13 +582,12 @@ static void dashboard_render(struct dashboard *dashboard, const struct tag_map *
     for (size_t i = 0; i < dashboard->len; i++) {
         const struct tag_state *state = &dashboard->tags[i];
         const struct twr_sample *s = &state->sample;
-        const char *label = tag_map_lookup(map, state->a16);
         long age = (long)(now - state->updated_at);
         char age_label[16];
         snprintf(age_label, sizeof(age_label), "%lds", age);
 
-        printf("%-8s %-16s %6d %6d %8d %7d %7d %7d %8d\n",
-               age_label, label, s->r, s->d, s->p, s->x, s->y, s->o, s->t);
+        printf("%-8s %-16s %6d %8d %8d %7d %7d %8.2f %8d\n",
+               age_label, state->label, s->r, s->d, s->p, s->x, s->y, s->o / 100.0, s->t);
     }
 
     fflush(stdout);
@@ -598,11 +625,11 @@ static void handle_payload(const char *payload, const struct options *opts, stru
     if (parse_twr_sample(payload, &sample)) {
         if (opts->stream) {
             const char *tag_label = tag_map_lookup(map, sample.a16);
-            printf("%-8s %-16s %6d %6d %8d %7d %7d %7d %8d\n",
+            printf("%-8s %-16s %6d %8d %8d %7d %7d %8.2f %8d\n",
                    now_hms(), tag_label, sample.r, sample.d, sample.p,
-                   sample.x, sample.y, sample.o, sample.t);
+                   sample.x, sample.y, sample.o / 100.0, sample.t);
         } else {
-            dashboard_update(dashboard, &sample);
+            dashboard_update(dashboard, map, &sample);
         }
     } else if (strstr(payload, "\"NewTag\"")) {
         char tag[32] = "-";
@@ -722,7 +749,7 @@ int main(int argc, char **argv)
 
         long long current_ms = now_ms();
         if (!opts.stream && current_ms - last_render_ms >= 250) {
-            dashboard_render(&dashboard, &map);
+            dashboard_render(&dashboard);
             last_render_ms = current_ms;
         }
     }
