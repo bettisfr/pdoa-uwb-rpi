@@ -36,6 +36,46 @@ Use stream mode for raw logging/debugging:
 ./pdoa-monitor -d /dev/ttyACM0 --stream
 ```
 
+Every run writes a CSV log under `logs/`:
+
+```text
+logs/pdoa_YYYYMMDD_HHMMSS.csv
+```
+
+CSV columns:
+
+```text
+time,tag,a16,seq,range_cm,pdoa_deg,x_cm,y_cm,clk_ppm,t_us
+```
+
+## Web UI
+
+Run the simple web frontend on the Raspberry Pi:
+
+```bash
+make web
+```
+
+It starts `./pdoa-monitor`, writes CSV logs, and serves a dashboard at:
+
+```text
+http://<raspberry-pi-ip>:8080
+```
+
+The page shows the latest tag rows plus a simple 2D plot with the node at `(0,0)` and tags placed from the reported `x_cm` and `y_cm` values.
+
+The `range_avg_cm` and `range_std_cm` columns are computed by the web server from the latest `range_cm` samples in the current CSV log. They are not native DWM1002 fields.
+
+The web API ignores samples where both `x_cm` and `y_cm` are zero, treating them as invalid position reports.
+
+The `bearing_deg` column is derived from `atan2(y_cm, x_cm)`. It is the geometric bearing from the node origin, not the native PDoA value.
+
+Default URL in the current setup:
+
+```text
+http://192.168.1.67:8080
+```
+
 ## Tag Config
 
 Tag labels are loaded from `config/tags.json`.
@@ -72,6 +112,18 @@ The Raspberry Pi clone is expected at `/home/fra/pdoa-uwb-rpi`.
 
 ```bash
 ./scripts/sync-rpi.sh
+```
+
+Sync, build, and restart the web monitor:
+
+```bash
+./scripts/sync-rpi.sh --web
+```
+
+Useful web options:
+
+```bash
+./scripts/sync-rpi.sh --web --web-port 8080 --web-device /dev/ttyACM0 --stddev-window 100
 ```
 
 Defaults:
@@ -130,4 +182,4 @@ The DWM1002 JSON `TWR` report includes:
 - `T`: timestamp inside the node superframe in microseconds, shown as `t_us`;
 - `X`, `Y`, `Z`: tag accelerometer values in mg.
 
-The firmware does not output a separate bearing/angle field. If needed, bearing can be derived from `Xcm` and `Ycm` in the monitor.
+The firmware does not output a separate geometric bearing field. The web UI derives `bearing_deg` from `Xcm` and `Ycm`.

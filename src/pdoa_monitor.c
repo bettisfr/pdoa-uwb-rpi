@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <termios.h>
 #include <time.h>
@@ -18,6 +19,7 @@
 
 #define DEFAULT_DEVICE "/dev/ttyACM0"
 #define DEFAULT_TAG_CONFIG "config/tags.json"
+#define DEFAULT_LOG_DIR "logs"
 #define MAX_PAYLOAD 4096
 #define MAX_TAGS 64
 #define TAG_STALE_SECONDS 5
@@ -27,6 +29,7 @@ static volatile sig_atomic_t keep_running = 1;
 struct options {
     const char *device;
     const char *tag_config;
+    const char *log_dir;
     bool raw;
     bool show_all_json;
     bool stream;
@@ -69,6 +72,11 @@ struct dashboard {
     bool dirty;
 };
 
+struct csv_log {
+    FILE *fp;
+    char path[512];
+};
+
 static void on_signal(int signum)
 {
     (void)signum;
@@ -83,6 +91,7 @@ static void usage(const char *argv0)
             "Options:\n"
             "  -d DEVICE  Serial device, default " DEFAULT_DEVICE "\n"
             "  -c FILE    Tag config JSON, default " DEFAULT_TAG_CONFIG "\n"
+            "  --log-dir DIR CSV log directory, default " DEFAULT_LOG_DIR "\n"
             "  -t A16=A64 Add a tag alias, can be repeated\n"
             "  --stream   Append every TWR sample instead of redrawing a stable table\n"
             "  --raw      Print raw JS payloads as well as parsed rows\n"
@@ -94,6 +103,7 @@ static int parse_options(int argc, char **argv, struct options *opts)
 {
     opts->device = DEFAULT_DEVICE;
     opts->tag_config = DEFAULT_TAG_CONFIG;
+    opts->log_dir = DEFAULT_LOG_DIR;
     opts->raw = false;
     opts->show_all_json = false;
     opts->stream = false;
@@ -112,6 +122,12 @@ static int parse_options(int argc, char **argv, struct options *opts)
                 return -1;
             }
             opts->tag_config = argv[++i];
+        } else if (strcmp(argv[i], "--log-dir") == 0) {
+            if (i + 1 >= argc) {
+                usage(argv[0]);
+                return -1;
+            }
+            opts->log_dir = argv[++i];
         } else if (strcmp(argv[i], "-t") == 0) {
             if (i + 1 >= argc || opts->tag_alias_count >= MAX_TAGS) {
                 usage(argv[0]);
@@ -484,11 +500,62 @@ static const char *now_hms(void)
     return buf;
 }
 
+static const char *now_iso8601(void)
+{
+    static char buf[32];
+    time_t t = time(NULL);
+    struct tm tm_value;
+
+    localtime_r(&t, &tm_value);
+    strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S%z", &tm_value);
+    return buf;
+}
+
 static long long now_ms(void)
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return (long long)tv.tv_sec * 1000LL + tv.tv_usec / 1000LL;
+}
+
+static int open_csv_log(const char *log_dir, struct csv_log *log)
+{
+    memset(log, 0, sizeof(*log));
+
+    if (mkdir(log_dir, 0775) != 0 && errno != EEXIST) {
+        perror(log_dir);
+        return -1;
+    }
+
+    time_t t = time(NULL);
+    struct tm tm_value;
+    char stamp[32];
+    localtime_r(&t, &tm_value);
+    strftime(stamp, sizeof(stamp), "%Y%m%d_%H%M%S", &tm_value);
+
+    snprintf(log->path, sizeof(log->path), "%s/pdoa_%s.csv", log_dir, stamp);
+    log->fp = fopen(log->path, "w");
+    if (!log->fp) {
+        perror(log->path);
+        return -1;
+    }
+
+    fprintf(log->fp, "time,tag,a16,seq,range_cm,pdoa_deg,x_cm,y_cm,clk_ppm,t_us\n");
+    fflush(log->fp);
+    fprintf(stderr, "Logging CSV to %s\n", log->path);
+    return 0;
+}
+
+static void csv_log_sample(struct csv_log *log, const char *label, const struct twr_sample *sample)
+{
+    if (!log->fp) {
+        return;
+    }
+
+    fprintf(log->fp, "%s,%s,%s,%d,%d,%d,%d,%d,%.2f,%d\n",
+            now_iso8601(), label, sample->a16, sample->r, sample->d, sample->p,
+            sample->x, sample->y, sample->o / 100.0, sample->t);
+    fflush(log->fp);
 }
 
 static void print_header(void)
@@ -613,7 +680,7 @@ static void write_command(int fd, const char *command)
 }
 
 static void handle_payload(const char *payload, const struct options *opts, struct tag_map *map,
-                           struct dashboard *dashboard)
+                           struct dashboard *dashboard, struct csv_log *log)
 {
     update_tag_map_from_payload(map, payload);
 
@@ -623,8 +690,10 @@ static void handle_payload(const char *payload, const struct options *opts, stru
 
     struct twr_sample sample;
     if (parse_twr_sample(payload, &sample)) {
+        const char *tag_label = tag_map_lookup(map, sample.a16);
+        csv_log_sample(log, tag_label, &sample);
+
         if (opts->stream) {
-            const char *tag_label = tag_map_lookup(map, sample.a16);
             printf("%-8s %-16s %6d %8d %8d %7d %7d %8.2f %8d\n",
                    now_hms(), tag_label, sample.r, sample.d, sample.p,
                    sample.x, sample.y, sample.o / 100.0, sample.t);
@@ -645,7 +714,7 @@ static void handle_payload(const char *payload, const struct options *opts, stru
 }
 
 static void process_stream(unsigned char *buf, size_t *len, const struct options *opts, struct tag_map *map,
-                           struct dashboard *dashboard)
+                           struct dashboard *dashboard, struct csv_log *log)
 {
     size_t pos = 0;
 
@@ -669,7 +738,7 @@ static void process_stream(unsigned char *buf, size_t *len, const struct options
         char payload[MAX_PAYLOAD + 1];
         memcpy(payload, &buf[pos + 6], (size_t)payload_len);
         payload[payload_len] = '\0';
-        handle_payload(payload, opts, map, dashboard);
+        handle_payload(payload, opts, map, dashboard, log);
 
         pos += frame_len;
     }
@@ -707,8 +776,13 @@ int main(int argc, char **argv)
     size_t len = 0;
     struct tag_map map = {0};
     struct dashboard dashboard = {0};
+    struct csv_log log = {0};
     load_config_tags(&map, opts.tag_config);
     load_aliases(&map, &opts);
+    if (open_csv_log(opts.log_dir, &log) != 0) {
+        close(fd);
+        return 1;
+    }
     long long last_render_ms = 0;
 
     write_command(fd, "GETKLIST\r");
@@ -737,7 +811,7 @@ int main(int argc, char **argv)
             ssize_t n = read(fd, buf + len, sizeof(buf) - len);
             if (n > 0) {
                 len += (size_t)n;
-                process_stream(buf, &len, &opts, &map, &dashboard);
+                process_stream(buf, &len, &opts, &map, &dashboard, &log);
                 if (len == sizeof(buf)) {
                     len = 0;
                 }
@@ -755,6 +829,9 @@ int main(int argc, char **argv)
     }
 
     close(fd);
+    if (log.fp) {
+        fclose(log.fp);
+    }
     if (!opts.stream) {
         printf("\033[?25h");
     }
