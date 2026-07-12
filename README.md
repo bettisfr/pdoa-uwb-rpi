@@ -71,6 +71,7 @@ provides:
 - the planned bearing on every tag status tile;
 - distance and relative tag rotation selection;
 - automatic completion when every tag reaches the sample target;
+- amber partial acquisition when one or more tags are unavailable;
 - persistent progress across all 60 distance and rotation combinations;
 - live range, PDoA, and sample age details.
 
@@ -96,8 +97,15 @@ datasets/<experiment-id>/
 ```
 
 Run files include the node height, target distance, relative tag rotation,
-planned tag bearing, and all raw monitor fields. Samples with `(x_cm, y_cm)`
-equal to `(0, 0)` remain in the CSV but do not count toward run completion.
+planned tag bearing, expected tags, participating tags, missing tags, and all raw
+monitor fields. Samples with `(x_cm, y_cm)` equal to `(0, 0)` remain in the CSV
+but do not count toward run completion.
+
+With all nine tags ready, the interface starts a complete run. With fewer tags,
+an amber action asks for confirmation and records a partial run. Completion is
+based only on the tags present at run start. A 120-second timeout prevents a tag
+failure during acquisition from blocking the run indefinitely. Partial
+conditions remain available for a later recovery run.
 
 Both `logs/` and `datasets/` are excluded from Git and Raspberry Pi sync
 deletion. Field data therefore remains on the Raspberry Pi across deployments.

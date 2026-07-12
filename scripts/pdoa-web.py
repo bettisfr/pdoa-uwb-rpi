@@ -29,6 +29,7 @@ TAG_LAYOUT = [
 ]
 DISTANCES_M = list(range(2, 31, 2))
 ROTATIONS_DEG = [0, 90, 180, 270]
+RUN_TIMEOUT_S = 120
 RAW_FIELDS = ["time", "tag", "a16", "seq", "range_cm", "pdoa_deg", "x_cm", "y_cm", "clk_ppm", "t_us"]
 
 
@@ -60,6 +61,7 @@ HTML = r"""<!doctype html>
     label { display: grid; gap: 7px; color: #3e4a52; font-size: 14px; }
     input, select { width: 100%; min-height: 48px; padding: 0 12px; border: 1px solid #7c8992; border-radius: 6px; background: #ffffff; color: #151b20; }
     .primary { width: 100%; color: #ffffff; background: #176b3a; }
+    .warning { width: 100%; color: #2f2306; background: #e5b83f; }
     .danger { width: 100%; color: #fff; background: #9f3841; }
     .secondary { color: #1b2329; background: #dce2e5; }
     .text-button { min-height: 38px; padding: 0 8px; color: #355d7a; background: transparent; }
@@ -222,6 +224,7 @@ HTML = r"""<!doctype html>
     let lastActive = false;
     let datasetNameEdited = false;
     let currentExperiment = null;
+    let readyTags = [];
 
     const el = id => document.getElementById(id);
     const setup = el('setup');
@@ -259,6 +262,7 @@ HTML = r"""<!doctype html>
     }
 
     function renderTags(tags) {
+      readyTags = tags.map(tag => tag.tag);
       const byName = Object.fromEntries(tags.map(tag => [tag.tag, tag]));
       el('tag-grid').replaceChildren(...tagLayout.map(([name, bearing]) => {
         const item = document.createElement('div');
@@ -268,7 +272,9 @@ HTML = r"""<!doctype html>
         return item;
       }));
       el('ready-count').textContent = `${tags.length} / 9 ready`;
-      el('start-run').disabled = tags.length !== 9;
+      el('start-run').disabled = tags.length === 0;
+      el('start-run').className = tags.length === 9 ? 'primary' : 'warning';
+      el('start-run').textContent = tags.length === 9 ? 'Start acquisition' : `Start partial run (${tags.length}/9)`;
 
       el('live-list').replaceChildren(...expectedTags.map(name => {
         const tag = byName[name];
@@ -280,8 +286,8 @@ HTML = r"""<!doctype html>
     }
 
     function renderProgress(state) {
-      const complete = Object.values(state.conditions).filter(item => item.status === 'complete').length;
-      el('overall').textContent = `${complete}/60`;
+      const recorded = Object.values(state.conditions).filter(item => ['complete', 'partial'].includes(item.status)).length;
+      el('overall').textContent = `${recorded}/60`;
       el('progress-list').replaceChildren(...distances.map(distance => {
         const row = document.createElement('div');
         row.className = 'distance-row';
@@ -302,7 +308,8 @@ HTML = r"""<!doctype html>
       if (!active) return;
 
       const counts = active.counts || {};
-      const minimum = Math.min(...expectedTags.map(tag => counts[tag] || 0));
+      const participating = active.participating_tags || expectedTags;
+      const minimum = Math.min(...participating.map(tag => counts[tag] || 0));
       const percent = Math.min(100, Math.floor(minimum * 100 / active.target_samples));
       el('active-label').textContent = `${active.distance_m} m · ${active.rotation_deg}°`;
       el('run-progress').style.width = `${percent}%`;
@@ -414,6 +421,8 @@ HTML = r"""<!doctype html>
       } catch (error) { showError(error); }
     };
     el('start-run').onclick = async () => {
+      const missing = expectedTags.filter(tag => !readyTags.includes(tag));
+      if (missing.length && !confirm(`Start a partial run without ${missing.join(', ')}?`)) return;
       try { await post('/api/run/start', {distance_m: selectedDistance, rotation_deg: selectedRotation}); await refresh(); }
       catch (error) { showError(error); }
     };
@@ -467,6 +476,8 @@ class App:
         if self.monitor and self.monitor.poll() is None:
             return
         self.last_monitor_start = time.time()
+        if not Path(self.device).exists():
+            return
         self.log_dir.mkdir(exist_ok=True)
         cmd = [
             str(self.root / "pdoa-monitor"), "-d", self.device, "--stream", "--log-dir", str(self.log_dir)
@@ -488,8 +499,14 @@ class App:
     def running(self):
         return bool(self.monitor and self.monitor.poll() is None)
 
+    def node_ready(self):
+        return Path(self.device).exists() and self.running()
+
     def ensure_monitor(self):
-        if not self.running() and time.time() - self.last_monitor_start >= 5:
+        device_exists = Path(self.device).exists()
+        if self.running() and not device_exists:
+            self.stop_monitor()
+        if device_exists and not self.running() and time.time() - self.last_monitor_start >= 5:
             self.start_monitor()
 
     def _read_rows(self, paths=None):
@@ -543,7 +560,7 @@ class App:
             if row["age_s"] <= 5 and tag in {item["tag"] for item in TAG_LAYOUT}:
                 tags.append(row)
 
-        return {"running": self.running(), "device": self.device, "log_file": path.name if path else None, "tags": tags}
+        return {"running": self.node_ready(), "device": self.device, "log_file": path.name if path else None, "tags": tags}
 
     def _load_state(self):
         if not self.state_path.exists():
@@ -669,8 +686,11 @@ class App:
             rotation_deg = int(rotation_deg)
             if distance_m not in DISTANCES_M or rotation_deg not in ROTATIONS_DEG:
                 raise ValueError("Invalid distance or rotation")
-            if len(self.samples()["tags"]) != len(TAG_LAYOUT):
-                raise ValueError("All 9 tags must be ready before starting")
+            ready_tags = sorted(row["tag"] for row in self.samples()["tags"])
+            if not ready_tags:
+                raise ValueError("At least one tag must be ready before starting")
+            expected_tags = [item["tag"] for item in TAG_LAYOUT]
+            missing_tags = [tag for tag in expected_tags if tag not in ready_tags]
             key = f"{distance_m}:{rotation_deg}"
             attempt = state["conditions"][key]["attempts"] + 1
             state["conditions"][key] = {"status": "active", "attempts": attempt}
@@ -681,6 +701,9 @@ class App:
                 "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                 "started_epoch": time.time(),
                 "target_samples": state["target_samples"],
+                "timeout_s": RUN_TIMEOUT_S,
+                "participating_tags": ready_tags,
+                "missing_tags": missing_tags,
                 "counts": {item["tag"]: 0 for item in TAG_LAYOUT},
             }
             self._persist_experiment(state)
@@ -699,7 +722,7 @@ class App:
         bearings = {item["tag"]: item["bearing_deg"] for item in TAG_LAYOUT}
         fields = [
             "experiment_id", "run_file", "node_height_m", "target_distance_m", "tag_rotation_deg",
-            "tag_bearing_deg", "valid_position", *RAW_FIELDS,
+            "expected_tags", "participating_tags", "missing_tags", "tag_bearing_deg", "valid_position", *RAW_FIELDS,
         ]
         with output.open("w", newline="") as fp:
             writer = csv.DictWriter(fp, fieldnames=fields)
@@ -711,6 +734,9 @@ class App:
                     "node_height_m": state["node_height_m"],
                     "target_distance_m": active["distance_m"],
                     "tag_rotation_deg": active["rotation_deg"],
+                    "expected_tags": ";".join(item["tag"] for item in TAG_LAYOUT),
+                    "participating_tags": ";".join(active["participating_tags"]),
+                    "missing_tags": ";".join(active["missing_tags"]),
                     "tag_bearing_deg": bearings[row["tag"]],
                     "valid_position": int(self._valid_row(row)),
                     **{field: row.get(field, "") for field in RAW_FIELDS},
@@ -740,8 +766,12 @@ class App:
                 rows = self._run_rows(state["active_run"])
                 counts = self._counts(rows)
                 state["active_run"]["counts"] = counts
-                if min(counts.values()) >= state["active_run"]["target_samples"]:
-                    self._finish_run(state, "complete", rows)
+                participating = state["active_run"]["participating_tags"]
+                target_reached = min(counts[tag] for tag in participating) >= state["active_run"]["target_samples"]
+                timed_out = time.time() - state["active_run"]["started_epoch"] >= state["active_run"]["timeout_s"]
+                if target_reached or timed_out:
+                    run_status = "complete" if target_reached and not state["active_run"]["missing_tags"] else "partial"
+                    self._finish_run(state, run_status, rows)
                     state = self._load_state()
                 else:
                     self._persist_experiment(state)
@@ -750,11 +780,19 @@ class App:
             if state:
                 for distance in DISTANCES_M:
                     for rotation in ROTATIONS_DEG:
-                        if state["conditions"][f"{distance}:{rotation}"]["status"] != "complete":
+                        if state["conditions"][f"{distance}:{rotation}"]["status"] == "pending":
                             next_condition = {"distance_m": distance, "rotation_deg": rotation}
                             break
                     if next_condition:
                         break
+                if not next_condition:
+                    for distance in DISTANCES_M:
+                        for rotation in ROTATIONS_DEG:
+                            if state["conditions"][f"{distance}:{rotation}"]["status"] == "partial":
+                                next_condition = {"distance_m": distance, "rotation_deg": rotation}
+                                break
+                        if next_condition:
+                            break
             return {**sample_data, "experiment": state, "next_condition": next_condition}
 
 
@@ -799,10 +837,10 @@ def make_handler(app: App):
                 body = self._body()
                 if path == "/api/start":
                     app.start_monitor()
-                    self._json({"running": app.running()})
+                    self._json({"running": app.node_ready()})
                 elif path == "/api/stop":
                     app.stop_monitor()
-                    self._json({"running": app.running()})
+                    self._json({"running": app.node_ready()})
                 elif path == "/api/experiment/create":
                     self._json(app.create_experiment(
                         body.get("name"), body.get("target_samples", 200), body.get("node_height_m", 0)
