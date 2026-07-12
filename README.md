@@ -99,12 +99,88 @@ Current tags:
       "a16": "8FB0",
       "id": "013A6102C3F48FB0",
       "name": "dw02"
+    },
+    {
+      "a16": "021B",
+      "id": "013A6102C435021B",
+      "name": "dw03"
+    },
+    {
+      "a16": "0F85",
+      "id": "013A6102C3F50F85",
+      "name": "dw04"
+    },
+    {
+      "a16": "4B92",
+      "id": "013A6102C3F44B92",
+      "name": "dw05"
+    },
+    {
+      "a16": "0789",
+      "id": "013A6102C3F40789",
+      "name": "dw06"
+    },
+    {
+      "a16": "5783",
+      "id": "013A6102C3F55783",
+      "name": "dw07"
+    },
+    {
+      "a16": "028E",
+      "id": "013A6102C435028E",
+      "name": "dw08"
     }
   ]
 }
 ```
 
 `a16` is the short address configured on the DWM1002 node. `id` is the tag long address reported by the node. `name` is what the monitor displays.
+
+## Measurement Layout
+
+Place the DWM1002 node at the logical origin `(0, 0)`. Arrange the nine tags at
+fixed bearings around the 90-degree center line:
+
+| Tag | Bearing |
+| --- | ---: |
+| `dw00` | 15 deg |
+| `dw01` | 35 deg |
+| `dw02` | 55 deg |
+| `dw03` | 75 deg |
+| `dw04` | 90 deg |
+| `dw05` | 105 deg |
+| `dw06` | 125 deg |
+| `dw07` | 145 deg |
+| `dw08` | 165 deg |
+
+Run measurements at radial distances from 2 m through 30 m, in 2 m steps:
+
+```text
+2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30 m
+```
+
+Keep all tags at the same height and antenna orientation for each measurement.
+
+To evaluate whether tag reception is isotropic, repeat each position and distance
+measurement with four relative tag rotations around the vertical axis:
+
+```text
+0, 90, 180, 270 deg
+```
+
+Use the same physical face as the 0-degree reference for every tag. Change only
+the tag rotation while keeping its position, height, and the node orientation
+fixed.
+
+For the full measurement campaign, repeat the experiment with the DWM1002 node
+at three heights above the reference ground plane:
+
+```text
+0, 2, 4 m
+```
+
+Keep the tag layout and the node's horizontal position at `(0, 0)` unchanged
+when changing the node height.
 
 ## Sync To Raspberry Pi
 
