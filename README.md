@@ -56,25 +56,51 @@ Run the simple web frontend on the Raspberry Pi:
 make web
 ```
 
-It starts `./pdoa-monitor`, writes CSV logs, and serves a dashboard at:
+It starts `./pdoa-monitor`, writes continuous CSV logs, and serves a
+mobile-first field interface at:
 
 ```text
 http://<raspberry-pi-ip>:8080
 ```
 
-The page shows the latest tag rows plus a simple 2D plot with the node at `(0,0)` and tags placed from the reported `x_cm` and `y_cm` values.
+The light, high-contrast interface is designed for phones and tablets. It
+provides:
 
-The `range_avg_cm` and `range_std_cm` columns are computed by the web server from the latest `range_cm` samples in the current CSV log. They are not native DWM1002 fields.
+- editable experiment name, node height, and sample target before acquisition;
+- separate DWM1002 node and nine-tag readiness checks;
+- the planned bearing on every tag status tile;
+- distance and relative tag rotation selection;
+- automatic completion when every tag reaches the sample target;
+- persistent progress across all 60 distance and rotation combinations;
+- live range, PDoA, and sample age details.
 
-The web API ignores samples where both `x_cm` and `y_cm` are zero, treating them as invalid position reports.
-
-The `bearing_deg` column is derived from `atan2(y_cm, x_cm)`. It is the geometric bearing from the node origin, not the native PDoA value.
+The monitor retries the serial connection every five seconds, so reconnecting
+the DWM1002 does not require restarting the web server.
 
 Default URL in the current setup:
 
 ```text
 http://192.168.1.67:8080
 ```
+
+Experiment setup can be edited until the first run starts. Once acquisition has
+begun, it is locked to keep run metadata consistent.
+
+Experiment data is stored separately from the continuous monitor log:
+
+```text
+datasets/<experiment-id>/
+  experiment.json
+  runs/
+    d002m_r000_run01.csv
+```
+
+Run files include the node height, target distance, relative tag rotation,
+planned tag bearing, and all raw monitor fields. Samples with `(x_cm, y_cm)`
+equal to `(0, 0)` remain in the CSV but do not count toward run completion.
+
+Both `logs/` and `datasets/` are excluded from Git and Raspberry Pi sync
+deletion. Field data therefore remains on the Raspberry Pi across deployments.
 
 ## Tag Config
 

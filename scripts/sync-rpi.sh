@@ -67,6 +67,7 @@ rsync -av --delete \
   --exclude='pdoa-monitor' \
   --exclude='build/' \
   --exclude='logs/' \
+  --exclude='datasets/' \
   "${repo_root}/" "${RPI_HOST}:${RPI_DIR}/"
 
 ssh "${RPI_HOST}" "cd '${RPI_DIR}' && make"

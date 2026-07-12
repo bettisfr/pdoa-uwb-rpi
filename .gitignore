@@ -3,4 +3,5 @@ backups/
 build/
 pdoa-monitor
 logs/
+datasets/
 __pycache__/
