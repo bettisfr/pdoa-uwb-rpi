@@ -195,6 +195,37 @@ Run measurements at radial distances from 2 m through 30 m, in 2 m steps:
 
 Keep all tags at the same height and antenna orientation for each measurement.
 
+### Tape-Based Placement
+
+The bearings can be laid out with a measuring tape, without measuring angles
+directly. For each radial distance `r`:
+
+1. Place the node at the origin.
+2. Establish the 90-degree center line.
+3. Place `dw04` on that line at distance `r` from the node.
+4. Place every other tag at distance `r` from the node and at the chord distance
+   `c` from `dw04`.
+
+The required chord is:
+
+```text
+c = 2 * r * sin_deg(abs(bearing_deg - 90) / 2)
+```
+
+Use these coefficients to calculate `c` directly from `r`:
+
+| Tags | Bearings | Chord from `dw04` |
+| --- | ---: | ---: |
+| `dw03`, `dw05` | 75, 105 deg | `0.2611 * r` |
+| `dw02`, `dw06` | 55, 125 deg | `0.6014 * r` |
+| `dw01`, `dw07` | 35, 145 deg | `0.9235 * r` |
+| `dw00`, `dw08` | 15, 165 deg | `1.2175 * r` |
+
+For example, at `r = 10 m`, the four chord distances from `dw04` are
+`2.61 m`, `6.01 m`, `9.24 m`, and `12.18 m`. The two intersections of each
+node-centered and `dw04`-centered distance identify the symmetric left and
+right tag positions.
+
 To evaluate whether tag reception is isotropic, repeat each position and distance
 measurement with four relative tag rotations around the vertical axis:
 
@@ -206,8 +237,8 @@ Use the same physical face as the 0-degree reference for every tag. Change only
 the tag rotation while keeping its position, height, and the node orientation
 fixed.
 
-For the full measurement campaign, repeat the experiment with the DWM1002 node
-at three heights above the reference ground plane:
+For the full measurement campaign, repeat the experiment with three relative
+node-height configurations:
 
 ```text
 0, 2, 4 m
@@ -215,6 +246,26 @@ at three heights above the reference ground plane:
 
 Keep the tag layout and the node's horizontal position at `(0, 0)` unchanged
 when changing the node height.
+
+### Campaign Size
+
+The full campaign contains:
+
+```text
+15 distances * 4 rotations * 9 tag bearings * 3 node heights
+= 1,620 experimental combinations
+```
+
+With 200 valid samples per combination, the expected complete dataset is:
+
+```text
+1,620 * 200 = 324,000 valid measurements
+```
+
+Because all nine tags are sampled concurrently, this corresponds to 60 runs
+per node height and 180 runs overall. At approximately one minute of radio
+acquisition per run, the minimum acquisition time is about three hours, not
+including placement, rotation, height changes, validation, or recovery runs.
 
 ## Sync To Raspberry Pi
 
