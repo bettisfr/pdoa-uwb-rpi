@@ -73,6 +73,8 @@ provides:
 - automatic completion when every tag reaches the sample target;
 - amber partial acquisition when one or more tags are unavailable;
 - persistent progress across all 60 distance and rotation combinations;
+- highlighted progress cells for the selected distance and rotation;
+- per-bearing summaries for recorded complete and partial runs;
 - live range, PDoA, and sample age details.
 
 The monitor retries the serial connection every five seconds, so reconnecting
@@ -107,8 +109,27 @@ based only on the tags present at run start. A 120-second timeout prevents a tag
 failure during acquisition from blocking the run indefinitely. Partial
 conditions remain available for a later recovery run.
 
+Tapping a recorded progress cell opens a mobile dialog with valid sample count,
+mean range, range standard deviation, and circular mean PDoA for every planned
+bearing. Tapping a pending cell selects that distance and rotation for the next
+run.
+
 Both `logs/` and `datasets/` are excluded from Git and Raspberry Pi sync
 deletion. Field data therefore remains on the Raspberry Pi across deployments.
+
+To delete every saved run from the current experiment and reset its progress,
+use the API-only endpoint below. It is intentionally not exposed in the web UI,
+requires explicit confirmation, and refuses to run during an active acquisition:
+
+```bash
+curl -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"confirm":"DELETE_ALL_RUNS"}' \
+  http://<raspberry-pi-ip>:8080/api/runs/clear
+```
+
+This deletes only run CSV files from the current experiment. It preserves the
+experiment setup and continuous files under `logs/`.
 
 ## Tag Config
 

@@ -13,7 +13,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 TAG_LAYOUT = [
@@ -98,11 +98,24 @@ HTML = r"""<!doctype html>
     .run-dot.complete { border-color: #28784a; color: #173b26; background: #edf8f1; }
     .run-dot.partial { border-color: #9a721b; color: #5a4108; background: #fff6da; }
     .run-dot.active { border-color: #397da8; color: #173b52; background: #eaf5fb; }
+    .run-dot.selected { outline: 3px solid #255f86; outline-offset: 1px; font-weight: 800; }
     details summary { padding: 4px 0; color: #45535c; cursor: pointer; }
     .live-row { display: grid; grid-template-columns: 1fr repeat(3, 62px); gap: 6px; padding: 9px 0; border-bottom: 1px solid #d9dee1; font-size: 13px; font-variant-numeric: tabular-nums; }
     .live-row span:not(:first-child) { text-align: right; }
     .hidden { display: none !important; }
     .error { padding: 12px; border: 1px solid #9f3841; border-radius: 6px; color: #6d1820; background: #fff0f1; }
+    dialog { width: min(calc(100% - 32px), 440px); padding: 0; border: 1px solid #aab4ba; border-radius: 8px; color: #1b2329; background: #ffffff; }
+    dialog::backdrop { background: rgb(27 35 41 / 55%); }
+    .dialog-content { display: grid; gap: 14px; padding: 20px; }
+    .dialog-content p { margin: 0; color: #45535c; line-height: 1.45; }
+    .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+    .results-dialog { width: min(calc(100% - 24px), 560px); max-height: 88vh; }
+    .results-content { max-height: 88vh; overflow: auto; }
+    .result-row { display: grid; grid-template-columns: 56px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid #d9dee1; }
+    .result-row:last-child { border-bottom: 0; }
+    .result-bearing { font-size: 17px; font-weight: 800; }
+    .result-values { display: grid; gap: 3px; font-size: 13px; }
+    .result-values strong { font-size: 14px; }
     @media (min-width: 600px) { .tag-grid { grid-template-columns: repeat(9, 1fr); } .tag { text-align: center; padding: 10px 4px; } }
   </style>
 </head>
@@ -210,6 +223,24 @@ HTML = r"""<!doctype html>
     </div>
   </main>
 
+  <dialog id="confirm-dialog">
+    <div class="dialog-content">
+      <h2 id="dialog-title"></h2>
+      <p id="dialog-message"></p>
+      <div class="dialog-actions">
+        <button id="dialog-cancel" class="secondary">Cancel</button>
+        <button id="dialog-confirm" class="primary">Confirm</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="results-dialog" class="results-dialog">
+    <div class="dialog-content results-content">
+      <div class="summary"><div><h2 id="results-title"></h2><div id="results-status" class="muted"></div></div><button id="results-close" class="text-button">Close</button></div>
+      <div id="results-list"></div>
+    </div>
+  </dialog>
+
   <script>
     const tagLayout = [
       ['dw00', 15], ['dw01', 35], ['dw02', 55], ['dw03', 75], ['dw04', 90],
@@ -248,6 +279,20 @@ HTML = r"""<!doctype html>
 
     function clearError() { el('error').classList.add('hidden'); }
 
+    function askConfirmation({title, message, confirmLabel = 'Confirm', tone = 'primary'}) {
+      const dialog = el('confirm-dialog');
+      el('dialog-title').textContent = title;
+      el('dialog-message').textContent = message;
+      el('dialog-confirm').textContent = confirmLabel;
+      el('dialog-confirm').className = tone;
+      dialog.showModal();
+      return new Promise(resolve => {
+        el('dialog-cancel').onclick = () => { dialog.close(); resolve(false); };
+        el('dialog-confirm').onclick = () => { dialog.close(); resolve(true); };
+        dialog.oncancel = event => { event.preventDefault(); dialog.close(); resolve(false); };
+      });
+    }
+
     function selectCondition(distance, rotation) {
       selectedDistance = distance;
       selectedRotation = rotation;
@@ -255,10 +300,28 @@ HTML = r"""<!doctype html>
       document.querySelectorAll('#rotations button').forEach(button => {
         button.classList.toggle('selected', Number(button.dataset.rotation) === rotation);
       });
+      if (currentExperiment) renderProgress(currentExperiment);
     }
 
     function conditionStatus(state, distance, rotation) {
       return state.conditions[`${distance}:${rotation}`]?.status || 'pending';
+    }
+
+    async function showRunSummary(distance, rotation) {
+      try {
+        const summary = await api(`/api/run/summary?distance_m=${distance}&rotation_deg=${rotation}`);
+        el('results-title').textContent = `${distance} m · ${rotation}°`;
+        el('results-status').textContent = `${summary.status} · ${summary.file}`;
+        el('results-list').replaceChildren(...summary.bearings.map(item => {
+          const row = document.createElement('div');
+          row.className = 'result-row';
+          const range = item.samples ? `${item.range_avg_cm} ± ${item.range_std_cm} cm` : 'No valid samples';
+          const pdoa = item.samples ? `${item.pdoa_mean_deg}° PDoA` : '—';
+          row.innerHTML = `<div class="result-bearing">${item.bearing_deg}°</div><div class="result-values"><strong>${item.tag} · ${item.samples} samples</strong><span>${range}</span><span>${pdoa}</span></div>`;
+          return row;
+        }));
+        el('results-dialog').showModal();
+      } catch (error) { showError(error); }
     }
 
     function renderTags(tags) {
@@ -293,11 +356,21 @@ HTML = r"""<!doctype html>
         row.className = 'distance-row';
         const dots = rotations.map(rotation => {
           const status = conditionStatus(state, distance, rotation);
-          return `<div class="run-dot ${status}">${rotation}°</div>`;
+          const selected = distance === selectedDistance && rotation === selectedRotation ? ' selected' : '';
+          return `<button class="run-dot ${status}${selected}" data-distance="${distance}" data-rotation="${rotation}">${rotation}°</button>`;
         }).join('');
         row.innerHTML = `<div class="distance-label">${distance} m</div><div class="run-dots">${dots}</div>`;
         return row;
       }));
+      document.querySelectorAll('.run-dot').forEach(button => {
+        button.onclick = () => {
+          const distance = Number(button.dataset.distance);
+          const rotation = Number(button.dataset.rotation);
+          selectCondition(distance, rotation);
+          const status = conditionStatus(state, distance, rotation);
+          if (status === 'complete' || status === 'partial') showRunSummary(distance, rotation);
+        };
+      });
     }
 
     function renderRun(active) {
@@ -422,20 +495,35 @@ HTML = r"""<!doctype html>
     };
     el('start-run').onclick = async () => {
       const missing = expectedTags.filter(tag => !readyTags.includes(tag));
-      if (missing.length && !confirm(`Start a partial run without ${missing.join(', ')}?`)) return;
+      if (missing.length && !await askConfirmation({
+        title: 'Start partial run?',
+        message: `Missing tags: ${missing.join(', ')}. The run will use ${readyTags.length} of 9 tags.`,
+        confirmLabel: 'Start partial run',
+        tone: 'warning'
+      })) return;
       try { await post('/api/run/start', {distance_m: selectedDistance, rotation_deg: selectedRotation}); await refresh(); }
       catch (error) { showError(error); }
     };
     el('stop-run').onclick = async () => {
-      if (!confirm('Stop and save this run as partial?')) return;
+      if (!await askConfirmation({
+        title: 'Stop acquisition?',
+        message: 'Samples collected so far will be saved as a partial run.',
+        confirmLabel: 'Stop and save',
+        tone: 'danger'
+      })) return;
       try { await post('/api/run/stop'); await refresh(); }
       catch (error) { showError(error); }
     };
     el('new-experiment').onclick = async () => {
-      if (!confirm('Create a new experiment? Existing files will be preserved.')) return;
+      if (!await askConfirmation({
+        title: 'Create new experiment?',
+        message: 'The current experiment files will remain stored on the Raspberry Pi.',
+        confirmLabel: 'New experiment'
+      })) return;
       try { await post('/api/experiment/clear'); window.conditionInitialized = false; await refresh(); }
       catch (error) { showError(error); }
     };
+    el('results-close').onclick = () => el('results-dialog').close();
 
     refresh();
     setInterval(refresh, 750);
@@ -758,6 +846,79 @@ class App:
                 raise ValueError("No run is active")
             self._finish_run(state, "partial")
 
+    def run_summary(self, distance_m, rotation_deg):
+        with self.lock:
+            state = self._load_state()
+            if not state:
+                raise ValueError("Create an experiment first")
+            distance_m = int(distance_m)
+            rotation_deg = int(rotation_deg)
+            if distance_m not in DISTANCES_M or rotation_deg not in ROTATIONS_DEG:
+                raise ValueError("Invalid distance or rotation")
+            condition = state["conditions"][f"{distance_m}:{rotation_deg}"]
+            filename = condition.get("file")
+            if not filename:
+                raise ValueError("This condition has no recorded run")
+            path = self._experiment_path(state) / "runs" / filename
+            rows_by_tag = defaultdict(list)
+            for row in self._read_rows([path]):
+                if row.get("valid_position") == "1":
+                    rows_by_tag[row["tag"]].append(row)
+
+            bearings = []
+            for layout in TAG_LAYOUT:
+                rows = rows_by_tag[layout["tag"]]
+                ranges = [float(row["range_cm"]) for row in rows]
+                pdoa_values = [math.radians(float(row["pdoa_deg"])) for row in rows]
+                mean = sum(ranges) / len(ranges) if ranges else 0.0
+                if len(ranges) >= 2:
+                    variance = sum((value - mean) ** 2 for value in ranges) / (len(ranges) - 1)
+                    stddev = math.sqrt(variance)
+                else:
+                    stddev = 0.0
+                if pdoa_values:
+                    pdoa_mean = math.degrees(math.atan2(
+                        sum(math.sin(value) for value in pdoa_values),
+                        sum(math.cos(value) for value in pdoa_values),
+                    ))
+                else:
+                    pdoa_mean = 0.0
+                bearings.append({
+                    "tag": layout["tag"],
+                    "bearing_deg": layout["bearing_deg"],
+                    "samples": len(rows),
+                    "range_avg_cm": f"{mean:.1f}",
+                    "range_std_cm": f"{stddev:.1f}",
+                    "pdoa_mean_deg": f"{pdoa_mean:.1f}",
+                })
+            return {
+                "distance_m": distance_m,
+                "rotation_deg": rotation_deg,
+                "status": condition["status"],
+                "file": filename,
+                "bearings": bearings,
+            }
+
+    def clear_runs(self, confirmation):
+        with self.lock:
+            if confirmation != "DELETE_ALL_RUNS":
+                raise ValueError("Confirmation must be DELETE_ALL_RUNS")
+            state = self._load_state()
+            if not state:
+                raise ValueError("Create an experiment first")
+            if state.get("active_run"):
+                raise ValueError("Stop the active run before deleting saved runs")
+            runs_dir = self._experiment_path(state) / "runs"
+            files = list(runs_dir.glob("*.csv"))
+            for path in files:
+                path.unlink()
+            state["conditions"] = {
+                f"{distance}:{rotation}": {"status": "pending", "attempts": 0}
+                for distance in DISTANCES_M for rotation in ROTATIONS_DEG
+            }
+            self._persist_experiment(state)
+            return {"deleted_runs": len(files), "experiment_id": state["id"]}
+
     def experiment_status(self):
         self.ensure_monitor()
         with self.lock:
@@ -815,7 +976,8 @@ def make_handler(app: App):
                 raise ValueError("Invalid JSON body")
 
         def do_GET(self):
-            path = urlparse(self.path).path
+            parsed = urlparse(self.path)
+            path = parsed.path
             if path == "/":
                 body = HTML.encode()
                 self.send_response(200)
@@ -828,6 +990,12 @@ def make_handler(app: App):
                 self._json(app.samples())
             elif path == "/api/experiment":
                 self._json(app.experiment_status())
+            elif path == "/api/run/summary":
+                try:
+                    query = parse_qs(parsed.query)
+                    self._json(app.run_summary(query["distance_m"][0], query["rotation_deg"][0]))
+                except (KeyError, TypeError, ValueError) as error:
+                    self._json({"error": str(error)}, 400)
             else:
                 self.send_error(404)
 
@@ -857,6 +1025,8 @@ def make_handler(app: App):
                 elif path == "/api/run/stop":
                     app.stop_run()
                     self._json({"ok": True})
+                elif path == "/api/runs/clear":
+                    self._json(app.clear_runs(body.get("confirm")))
                 else:
                     self.send_error(404)
             except (KeyError, TypeError, ValueError) as error:

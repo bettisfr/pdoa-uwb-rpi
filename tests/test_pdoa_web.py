@@ -73,6 +73,12 @@ class ExperimentTest(unittest.TestCase):
         self.assertEqual(rows[0]["node_height_m"], "2.5")
         self.assertEqual(rows[0]["missing_tags"], "")
 
+        summary = self.app.run_summary(2, 90)
+        self.assertEqual(summary["status"], "complete")
+        self.assertEqual(summary["bearings"][0]["tag"], "dw00")
+        self.assertEqual(summary["bearings"][0]["samples"], 100)
+        self.assertEqual(summary["bearings"][0]["range_avg_cm"], "200.0")
+
     def test_setup_can_change_before_first_run(self):
         state = self.app.create_experiment("Initial", 100, 1)
         updated = self.app.update_experiment("Ground", 200, 0)
@@ -107,6 +113,14 @@ class ExperimentTest(unittest.TestCase):
         with output.open(newline="") as fp:
             first = next(csv.DictReader(fp))
         self.assertEqual(first["missing_tags"], "dw08")
+
+        with self.assertRaisesRegex(ValueError, "Confirmation"):
+            self.app.clear_runs("delete")
+        result = self.app.clear_runs("DELETE_ALL_RUNS")
+        self.assertEqual(result["deleted_runs"], 1)
+        self.assertFalse(output.exists())
+        reset = self.app._load_state()
+        self.assertTrue(all(item == {"status": "pending", "attempts": 0} for item in reset["conditions"].values()))
 
 
 class RunningMonitor:
