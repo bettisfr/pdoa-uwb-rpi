@@ -56,6 +56,44 @@ The web server remains available if the node is disconnected. The monitor
 retries the serial connection every five seconds and resumes acquisition when
 `/dev/ttyACM0` returns.
 
+## Printable Node Stand
+
+A parametric OpenSCAD desktop stand for the DWM1002 is available under:
+
+```text
+hardware/dwm1002-stand/dwm1002-stand.scad
+```
+
+The current design provides:
+
+- an `80 x 50 x 3 mm` rounded horizontal base;
+- four countersunk M4 mounting holes;
+- three component-aware PCB saddles with `4 mm` internal clearance;
+- `2 mm` saddle walls;
+- a nominal `60 mm` PCB width;
+- perpendicular left and right lateral stops;
+- a raised, 45-degree-supported left stop that leaves the USB-C area below
+  `13 mm` unobstructed;
+- an open path to the DWM1002 `USB_MODULE` connector.
+
+Open and preview the source with:
+
+```bash
+openscad hardware/dwm1002-stand/dwm1002-stand.scad
+```
+
+For command-line STL generation:
+
+```bash
+openscad \
+  -o dwm1002-stand.stl \
+  hardware/dwm1002-stand/dwm1002-stand.scad
+```
+
+The translucent board shown in OpenSCAD preview mode is not included in the
+exported STL. Measure the assembled node before the final print and adjust the
+parameters at the top of the source if component tolerances require it.
+
 ## Build And Terminal Monitor
 
 Build on the Raspberry Pi:
