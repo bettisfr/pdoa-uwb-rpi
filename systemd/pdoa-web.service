@@ -1,0 +1,21 @@
+[Unit]
+Description=UWB PDoA acquisition and web interface
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=rpi
+Group=rpi
+SupplementaryGroups=dialout
+WorkingDirectory=/opt/pdoa-uwb-rpi
+Environment=PYTHONUNBUFFERED=1
+UMask=0002
+ExecStart=/opt/pyenv/bin/python /opt/pdoa-uwb-rpi/scripts/pdoa-web.py --host 0.0.0.0 --port 8080 --device /dev/ttyACM0 --stddev-window 100
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
