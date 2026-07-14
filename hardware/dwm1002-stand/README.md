@@ -5,12 +5,15 @@ small platform.
 
 The current model uses:
 
-- a `70 x 30 x 3 mm` rounded base;
+- an `80 x 50 x 3 mm` rounded base;
 - four countersunk M4 mounting holes;
-- three independent saddles measured from the PCB left edge: a `25 mm` high
-  saddle at `6-15 mm`, plus `30 mm` high saddles at `20-30 mm` and `40-59 mm`;
+- three independent saddles measured from the nominal `60 mm` PCB left edge: a
+  `25 mm` high saddle at `6-15 mm`, plus `30 mm` high saddles at `20-30 mm` and
+  `40-60 mm`;
 - `2 mm` front and rear saddle walls;
 - a perpendicular `12 mm` high right-hand stop joined to the third saddle;
+- a raised left-hand stop from `15 mm` to `25 mm`, leaving the USB-C area below
+  `13 mm` unobstructed, with two printable 45-degree support gussets;
 - a `4 mm` internal envelope around the lower PCB area;
 - an unobstructed board area above `45 mm`;
 - an open left side for USB cable access.

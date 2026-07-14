@@ -3,7 +3,7 @@
 
 $fn = 64;
 
-pcb_width = 59;
+pcb_width = 60;
 pcb_height = 72;
 clear_above_z = 45;
 
@@ -11,8 +11,8 @@ clear_above_z = 45;
 // connectors, solder joints, and component protrusions near the lower edge.
 pcb_envelope = 4;
 
-base_width = 70;
-base_depth = 30;
+base_width = 80;
+base_depth = 50;
 base_thickness = 3;
 base_corner_radius = 4;
 
@@ -22,6 +22,8 @@ join_overlap = 0.2;
 right_stop_clearance = 0;
 right_stop_height = 12;
 right_stop_thickness = 2;
+left_stop_bottom = 15;
+left_stop_thickness = 2;
 
 // Saddles are [start, end, height], with horizontal positions measured from
 // the PCB left edge. Add, remove, or adjust entries to avoid components.
@@ -32,8 +34,8 @@ saddle_intervals = [
 ];
 
 mount_hole_diameter = 4.5;  // M4 clearance
-mount_hole_x = 28;
-mount_hole_y = 10;
+mount_hole_x = 33;
+mount_hole_y = 18;
 countersink_diameter = 8.5;
 countersink_depth = 1.5;
 
@@ -105,11 +107,63 @@ module right_stop() {
               right_stop_height + join_overlap]);
 }
 
+module raised_left_stop() {
+    outer_depth = pcb_envelope + 2 * saddle_wall;
+    first_saddle_start = -pcb_width / 2 + saddle_intervals[0][0];
+    first_saddle_height = saddle_intervals[0][2];
+    board_left = -pcb_width / 2;
+    stop_height = first_saddle_height - left_stop_bottom;
+    bridge_width = first_saddle_start - board_left + left_stop_thickness;
+
+    assert(left_stop_bottom > 13,
+           "The raised left stop must remain above the USB-C connector.");
+    assert(stop_height > 0,
+           "The raised left stop must end below the first saddle height.");
+
+    // Side datum at the PCB edge, above the USB-C connector.
+    translate([board_left - left_stop_thickness,
+               -outer_depth / 2,
+               base_thickness + left_stop_bottom])
+        cube([left_stop_thickness, outer_depth, stop_height]);
+
+    // Front and rear bridges connect the datum to the first saddle while
+    // preserving the same component envelope as the saddle slot.
+    for (y = [-outer_depth / 2, pcb_envelope / 2])
+        translate([board_left - left_stop_thickness,
+                   y,
+                   base_thickness + left_stop_bottom])
+            cube([bridge_width, saddle_wall, stop_height]);
+
+    // Two 45-degree gussets support the raised bridges without filling the
+    // central USB-C cable corridor or requiring slicer-generated supports.
+    gusset_run = first_saddle_start - (board_left - left_stop_thickness);
+    gusset_top = base_thickness + left_stop_bottom;
+    gusset_bottom = gusset_top - gusset_run;
+
+    for (y = [-outer_depth / 2, pcb_envelope / 2])
+        polyhedron(
+            points = [
+                [board_left - left_stop_thickness, y, gusset_top],
+                [first_saddle_start, y, gusset_top],
+                [first_saddle_start, y, gusset_bottom],
+                [board_left - left_stop_thickness, y + saddle_wall, gusset_top],
+                [first_saddle_start, y + saddle_wall, gusset_top],
+                [first_saddle_start, y + saddle_wall, gusset_bottom]
+            ],
+            faces = [
+                [0, 2, 1], [3, 4, 5],
+                [0, 1, 4, 3], [1, 2, 5, 4], [2, 0, 3, 5]
+            ],
+            convexity = 4
+        );
+}
+
 module stand() {
     base();
     for (interval = saddle_intervals)
         saddle(interval);
     right_stop();
+    raised_left_stop();
 }
 
 module board_preview() {
