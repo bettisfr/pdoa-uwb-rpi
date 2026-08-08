@@ -5,3 +5,4 @@ pdoa-monitor
 logs/
 datasets/
 __pycache__/
+hardware/dwm1002-stand/*.stl
