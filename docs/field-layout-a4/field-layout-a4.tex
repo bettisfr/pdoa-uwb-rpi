@@ -56,19 +56,19 @@
     }
 
     \foreach \radius in {2,4,...,30} {
-      \node[black, font=\sffamily\tiny, anchor=east, xshift=-3pt]
+      \node[black, font=\sffamily\normalsize, anchor=east, xshift=-3pt]
         at (90:\radius) {\num[mode=text,minimum-decimal-digits=2]{\radius}};
     }
 
     \foreach \radius in {2,4,...,30} {
-      \node[black, font=\sffamily\tiny, anchor=south, yshift=2pt]
+      \node[black, font=\sffamily\normalsize, anchor=south, yshift=2pt]
         at (75:\radius) {\num[mode=text,round-mode=places,
           round-precision=2,minimum-decimal-digits=2]
           {\fpeval{2*\radius*sin(7.5*pi/180)}}};
     }
 
     \foreach \radius in {2,4,...,30} {
-      \node[black, font=\sffamily\tiny, anchor=south, yshift=2pt]
+      \node[black, font=\sffamily\normalsize, anchor=south, yshift=2pt]
         at (55:\radius) {\num[mode=text,round-mode=places,
           round-precision=2,minimum-decimal-digits=2]
           {\fpeval{2*\radius*sin(10*pi/180)}}};
@@ -76,7 +76,7 @@
 
     \foreach \bearing in {35,15} {
       \foreach \radius in {2,4,...,30} {
-        \node[black, font=\sffamily\tiny, anchor=south, yshift=2pt]
+        \node[black, font=\sffamily\normalsize, anchor=south, yshift=2pt]
           at (\bearing:\radius) {\num[mode=text,round-mode=places,
             round-precision=2,minimum-decimal-digits=2]
             {\fpeval{2*\radius*sin(10*pi/180)}}};
