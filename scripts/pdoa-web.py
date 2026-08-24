@@ -535,7 +535,7 @@ HTML = r"""<!doctype html>
 
 def parse_sample_time(value):
     try:
-        return time.mktime(time.strptime(value[:19], "%Y-%m-%dT%H:%M:%S"))
+        return datetime.fromisoformat(value).timestamp()
     except (TypeError, ValueError):
         return 0
 

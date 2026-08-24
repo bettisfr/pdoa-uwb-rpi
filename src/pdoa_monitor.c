@@ -502,12 +502,17 @@ static const char *now_hms(void)
 
 static const char *now_iso8601(void)
 {
-    static char buf[32];
-    time_t t = time(NULL);
+    static char buf[64];
+    char date[32];
+    char zone[16];
+    struct timespec ts;
     struct tm tm_value;
 
-    localtime_r(&t, &tm_value);
-    strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S%z", &tm_value);
+    clock_gettime(CLOCK_REALTIME, &ts);
+    localtime_r(&ts.tv_sec, &tm_value);
+    strftime(date, sizeof(date), "%Y-%m-%dT%H:%M:%S", &tm_value);
+    strftime(zone, sizeof(zone), "%z", &tm_value);
+    snprintf(buf, sizeof(buf), "%s.%03ld%s", date, ts.tv_nsec / 1000000L, zone);
     return buf;
 }
 
