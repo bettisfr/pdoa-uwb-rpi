@@ -205,15 +205,22 @@ The interface provides:
 - independent node and nine-tag readiness checks;
 - planned bearing on each tag tile;
 - distance and relative tag rotation selection;
-- automatic completion when participating tags reach the target;
-- confirmed partial runs when one or more tags are unavailable;
+- automatic completion when every expected tag reaches the target;
+- tags may join after acquisition starts if they become reachable;
+- at most the configured target number of valid samples per participating tag;
+- explicit resume or overwrite choices when restarting a partial condition;
 - persistent progress for all distance and rotation conditions;
 - per-bearing count, mean range, range standard deviation, and circular mean PDoA.
 
 Experiment setup is locked after the first run to keep metadata consistent. A
-run times out after 120 seconds, and partial conditions can be repeated later.
-Samples where `(x_cm, y_cm) == (0, 0)` remain in raw CSV files but do not count
-toward run completion or aggregate statistics.
+run has no automatic timeout: stop it manually when the required samples cannot
+be collected. Samples where `(x_cm, y_cm) == (0, 0)` do not count toward run
+completion or aggregate statistics. Each expected tag can contribute at most
+the configured target number of valid samples; once a tag reaches the target,
+additional samples from that tag are ignored. A tag that becomes reachable
+after `Start acquisition` is included automatically. Restarting a partial
+condition can either continue with tags below target or overwrite the saved
+run.
 
 ## Stored Data
 

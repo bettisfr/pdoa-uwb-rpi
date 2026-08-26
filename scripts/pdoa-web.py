@@ -29,7 +29,6 @@ TAG_LAYOUT = [
 ]
 DISTANCES_M = list(range(2, 31, 2))
 ROTATIONS_DEG = [0, 90, 180, 270]
-RUN_TIMEOUT_S = 120
 RAW_FIELDS = ["time", "tag", "a16", "seq", "range_cm", "pdoa_deg", "x_cm", "y_cm", "clk_ppm", "t_us"]
 
 
@@ -108,7 +107,7 @@ HTML = r"""<!doctype html>
     dialog::backdrop { background: rgb(27 35 41 / 55%); }
     .dialog-content { display: grid; gap: 14px; padding: 20px; }
     .dialog-content p { margin: 0; color: #45535c; line-height: 1.45; }
-    .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+    .dialog-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
     .results-dialog { width: min(calc(100% - 24px), 560px); max-height: 88vh; }
     .results-content { max-height: 88vh; overflow: auto; }
     .result-row { display: grid; grid-template-columns: 56px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid #d9dee1; }
@@ -229,6 +228,7 @@ HTML = r"""<!doctype html>
       <p id="dialog-message"></p>
       <div class="dialog-actions">
         <button id="dialog-cancel" class="secondary">Cancel</button>
+        <button id="dialog-overwrite" class="warning hidden">Overwrite</button>
         <button id="dialog-confirm" class="primary">Confirm</button>
       </div>
     </div>
@@ -281,6 +281,7 @@ HTML = r"""<!doctype html>
 
     function askConfirmation({title, message, confirmLabel = 'Confirm', tone = 'primary'}) {
       const dialog = el('confirm-dialog');
+      el('dialog-overwrite').classList.add('hidden');
       el('dialog-title').textContent = title;
       el('dialog-message').textContent = message;
       el('dialog-confirm').textContent = confirmLabel;
@@ -290,6 +291,26 @@ HTML = r"""<!doctype html>
         el('dialog-cancel').onclick = () => { dialog.close(); resolve(false); };
         el('dialog-confirm').onclick = () => { dialog.close(); resolve(true); };
         dialog.oncancel = event => { event.preventDefault(); dialog.close(); resolve(false); };
+      });
+    }
+
+    function askRunAction({title, message}) {
+      const dialog = el('confirm-dialog');
+      el('dialog-title').textContent = title;
+      el('dialog-message').textContent = message;
+      el('dialog-cancel').textContent = 'Cancel';
+      el('dialog-cancel').className = 'secondary';
+      el('dialog-overwrite').textContent = 'Overwrite';
+      el('dialog-overwrite').className = 'warning';
+      el('dialog-overwrite').classList.remove('hidden');
+      el('dialog-confirm').textContent = 'Continue';
+      el('dialog-confirm').className = 'primary';
+      dialog.showModal();
+      return new Promise(resolve => {
+        el('dialog-cancel').onclick = () => { dialog.close(); resolve('cancel'); };
+        el('dialog-overwrite').onclick = () => { dialog.close(); resolve('overwrite'); };
+        el('dialog-confirm').onclick = () => { dialog.close(); resolve('continue'); };
+        dialog.oncancel = event => { event.preventDefault(); dialog.close(); resolve('cancel'); };
       });
     }
 
@@ -335,9 +356,8 @@ HTML = r"""<!doctype html>
         return item;
       }));
       el('ready-count').textContent = `${tags.length} / 9 ready`;
-      el('start-run').disabled = tags.length === 0;
-      el('start-run').className = tags.length === 9 ? 'primary' : 'warning';
-      el('start-run').textContent = tags.length === 9 ? 'Start acquisition' : `Start partial run (${tags.length}/9)`;
+      el('start-run').className = 'primary';
+      el('start-run').textContent = 'Start acquisition';
 
       el('live-list').replaceChildren(...expectedTags.map(name => {
         const tag = byName[name];
@@ -382,11 +402,13 @@ HTML = r"""<!doctype html>
 
       const counts = active.counts || {};
       const participating = active.participating_tags || expectedTags;
-      const minimum = Math.min(...participating.map(tag => counts[tag] || 0));
-      const percent = Math.min(100, Math.floor(minimum * 100 / active.target_samples));
+      const total = participating.reduce((sum, tag) => sum + Math.min(counts[tag] || 0, active.target_samples), 0);
+      const targetTotal = participating.length * active.target_samples;
+      const completedTags = participating.filter(tag => (counts[tag] || 0) >= active.target_samples).length;
+      const percent = targetTotal ? Math.min(100, Math.floor(total * 100 / targetTotal)) : 0;
       el('active-label').textContent = `${active.distance_m} m · ${active.rotation_deg}°`;
       el('run-progress').style.width = `${percent}%`;
-      el('run-count').textContent = `${minimum} / ${active.target_samples} minimum samples`;
+      el('run-count').textContent = `${total} / ${targetTotal} total samples · ${completedTags} / ${participating.length} tags complete`;
       el('run-percent').textContent = `${percent}%`;
       el('run-tags').replaceChildren(...expectedTags.map(name => {
         const item = document.createElement('div');
@@ -403,6 +425,7 @@ HTML = r"""<!doctype html>
       el('node-check').classList.toggle('ready', data.running);
       el('node-state').textContent = data.running ? 'Ready' : 'Not connected';
       el('node-device').textContent = data.device || '/dev/ttyACM0';
+      el('start-run').disabled = !data.running;
       renderTags(data.tags || []);
 
       if (!data.experiment) {
@@ -494,14 +517,24 @@ HTML = r"""<!doctype html>
       } catch (error) { showError(error); }
     };
     el('start-run').onclick = async () => {
-      const missing = expectedTags.filter(tag => !readyTags.includes(tag));
-      if (missing.length && !await askConfirmation({
-        title: 'Start partial run?',
-        message: `Missing tags: ${missing.join(', ')}. The run will use ${readyTags.length} of 9 tags.`,
-        confirmLabel: 'Start partial run',
-        tone: 'warning'
-      })) return;
-      try { await post('/api/run/start', {distance_m: selectedDistance, rotation_deg: selectedRotation}); await refresh(); }
+      const condition = currentExperiment.conditions[`${selectedDistance}:${selectedRotation}`] || {};
+      let mode = 'overwrite';
+      if (condition.status === 'partial') {
+        const action = await askRunAction({
+          title: 'Resume partial run?',
+          message: 'Continue with the tags below target, or overwrite the saved run?'
+        });
+        if (action === 'cancel') return;
+        mode = action;
+      } else if (condition.status === 'complete') {
+        if (!await askConfirmation({
+          title: 'Overwrite completed run?',
+          message: 'The saved measurements for this distance and rotation will be replaced.',
+          confirmLabel: 'Overwrite',
+          tone: 'warning'
+        })) return;
+      }
+      try { await post('/api/run/start', {distance_m: selectedDistance, rotation_deg: selectedRotation, mode}); await refresh(); }
       catch (error) { showError(error); }
     };
     el('stop-run').onclick = async () => {
@@ -740,12 +773,17 @@ class App:
 
     def _run_rows(self, active):
         started_at = float(active["started_epoch"])
-        paths = [path for path in self.log_dir.glob("pdoa_*.csv") if path.stat().st_mtime >= started_at - 2]
         known_tags = {item["tag"] for item in TAG_LAYOUT}
-        return [
+        rows = []
+        base_file = active.get("base_file")
+        if base_file:
+            rows.extend(self._read_rows([self._experiment_path(self._load_state()) / "runs" / base_file]))
+        paths = [path for path in self.log_dir.glob("pdoa_*.csv") if path.stat().st_mtime >= started_at - 2]
+        rows.extend(
             row for row in self._read_rows(sorted(paths))
             if row.get("tag") in known_tags and parse_sample_time(row.get("time")) >= started_at
-        ]
+        )
+        return [row for row in rows if row.get("tag") in known_tags]
 
     @staticmethod
     def _valid_row(row):
@@ -763,7 +801,21 @@ class App:
                 counts[row["tag"]] += 1
         return counts
 
-    def start_run(self, distance_m, rotation_deg):
+    def _capped_rows(self, rows, active):
+        counts = defaultdict(int)
+        participating = set(active["participating_tags"])
+        capped = []
+        for row in rows:
+            tag = row.get("tag")
+            if tag not in participating or not self._valid_row(row):
+                continue
+            if counts[tag] >= active["target_samples"]:
+                continue
+            counts[tag] += 1
+            capped.append(row)
+        return capped
+
+    def start_run(self, distance_m, rotation_deg, mode="overwrite"):
         with self.lock:
             state = self._load_state()
             if not state:
@@ -774,32 +826,60 @@ class App:
             rotation_deg = int(rotation_deg)
             if distance_m not in DISTANCES_M or rotation_deg not in ROTATIONS_DEG:
                 raise ValueError("Invalid distance or rotation")
-            ready_tags = sorted(row["tag"] for row in self.samples()["tags"])
-            if not ready_tags:
-                raise ValueError("At least one tag must be ready before starting")
-            expected_tags = [item["tag"] for item in TAG_LAYOUT]
-            missing_tags = [tag for tag in expected_tags if tag not in ready_tags]
+            if mode not in ("continue", "overwrite"):
+                raise ValueError("Invalid run mode")
             key = f"{distance_m}:{rotation_deg}"
+            condition = state["conditions"][key]
+            if mode == "continue" and condition.get("status") != "partial":
+                raise ValueError("Only a partial run can be continued")
+            base_file = condition.get("file") if mode == "continue" else None
+            base_rows = []
+            if base_file:
+                base_path = self._experiment_path(state) / "runs" / base_file
+                base_rows = self._read_rows([base_path])
+            expected_tags = [item["tag"] for item in TAG_LAYOUT]
+            if mode == "continue":
+                participating = condition.get("participating_tags") or sorted(
+                    {row["tag"] for row in base_rows if self._valid_row(row)}
+                )
+                ready_tags = sorted(row["tag"] for row in self.samples()["tags"] if row["tag"] in participating)
+                participating_tags = participating
+                missing_tags = condition.get("missing_tags", [
+                    tag for tag in expected_tags if tag not in participating_tags
+                ])
+            else:
+                ready_tags = sorted(row["tag"] for row in self.samples()["tags"])
+                participating_tags = expected_tags
+                missing_tags = [tag for tag in expected_tags if tag not in ready_tags]
             attempt = state["conditions"][key]["attempts"] + 1
             state["conditions"][key] = {"status": "active", "attempts": attempt}
-            state["active_run"] = {
+            active_run = {
                 "distance_m": distance_m,
                 "rotation_deg": rotation_deg,
                 "attempt": attempt,
                 "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                 "started_epoch": time.time(),
                 "target_samples": state["target_samples"],
-                "timeout_s": RUN_TIMEOUT_S,
-                "participating_tags": ready_tags,
+                "participating_tags": participating_tags,
                 "missing_tags": missing_tags,
+                "base_file": base_file,
                 "counts": {item["tag"]: 0 for item in TAG_LAYOUT},
             }
+            if base_rows:
+                active_run["counts"] = self._counts(self._capped_rows(base_rows, active_run))
+            elif mode == "continue":
+                active_run["counts"] = {
+                    tag: min(int(condition.get("counts", {}).get(tag, 0)), state["target_samples"])
+                    for tag in expected_tags
+                }
+            state["active_run"] = active_run
             self._persist_experiment(state)
             return state["active_run"]
 
     def _finish_run(self, state, status, rows=None):
         active = state["active_run"]
         rows = self._run_rows(active) if rows is None else rows
+        rows = self._capped_rows(rows, active)
         counts = self._counts(rows)
         key = f"{active['distance_m']}:{active['rotation_deg']}"
         filename = (
@@ -834,6 +914,8 @@ class App:
             "attempts": active["attempt"],
             "file": filename,
             "counts": counts,
+            "participating_tags": active["participating_tags"],
+            "missing_tags": active["missing_tags"],
             "completed_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         }
         state["active_run"] = None
@@ -925,13 +1007,13 @@ class App:
             state = self._load_state()
             if state and state.get("active_run"):
                 rows = self._run_rows(state["active_run"])
+                rows = self._capped_rows(rows, state["active_run"])
                 counts = self._counts(rows)
                 state["active_run"]["counts"] = counts
                 participating = state["active_run"]["participating_tags"]
                 target_reached = min(counts[tag] for tag in participating) >= state["active_run"]["target_samples"]
-                timed_out = time.time() - state["active_run"]["started_epoch"] >= state["active_run"]["timeout_s"]
-                if target_reached or timed_out:
-                    run_status = "complete" if target_reached and not state["active_run"]["missing_tags"] else "partial"
+                if target_reached:
+                    run_status = "complete"
                     self._finish_run(state, run_status, rows)
                     state = self._load_state()
                 else:
@@ -1021,7 +1103,9 @@ def make_handler(app: App):
                         body.get("name"), body.get("target_samples"), body.get("node_height_m")
                     ))
                 elif path == "/api/run/start":
-                    self._json(app.start_run(body.get("distance_m"), body.get("rotation_deg")), 201)
+                    self._json(app.start_run(
+                        body.get("distance_m"), body.get("rotation_deg"), body.get("mode", "overwrite")
+                    ), 201)
                 elif path == "/api/run/stop":
                     app.stop_run()
                     self._json({"ok": True})

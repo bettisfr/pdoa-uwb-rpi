@@ -86,6 +86,39 @@ class ExperimentTest(unittest.TestCase):
         self.assertEqual(updated["target_samples"], 200)
         self.assertEqual(updated["node_height_m"], 0)
 
+    def test_run_waits_for_all_tags_without_timeout(self):
+        now = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+        self.write_rows(1, now)
+        state = self.app.create_experiment("No timeout", 100, 0)
+        self.app.start_run(2, 0)
+
+        status = self.app.experiment_status()
+        self.assertIsNotNone(status["experiment"]["active_run"])
+
+        state = self.app._load_state()
+        state["active_run"]["started_epoch"] = time.time() - 10000
+        self.app._persist_experiment(state)
+        status = self.app.experiment_status()
+        self.assertIsNotNone(status["experiment"]["active_run"])
+
+    def test_partial_run_can_be_continued_without_extra_samples(self):
+        now = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+        participating = [item["tag"] for item in pdoa_web.TAG_LAYOUT[:2]]
+        self.write_rows(1, now, participating)
+        state = self.app.create_experiment("Continue", 100, 0)
+        self.app.start_run(2, 0)
+        state = self.app._load_state()
+        state["active_run"]["started_epoch"] = time.time() - 1
+        self.app._persist_experiment(state)
+        self.write_rows(50, now, participating)
+        self.app.stop_run()
+
+        state = self.app._load_state()
+        active = self.app.start_run(2, 0, mode="continue")
+        self.assertEqual(active["participating_tags"], [item["tag"] for item in pdoa_web.TAG_LAYOUT])
+        self.assertEqual(active["counts"]["dw00"], 50)
+        self.assertEqual(active["counts"]["dw01"], 50)
+
     def test_node_requires_serial_device_and_monitor(self):
         self.assertTrue(self.app.node_ready())
         self.app.device = str(self.root / "missing-device")
@@ -104,6 +137,10 @@ class ExperimentTest(unittest.TestCase):
         self.app._persist_experiment(state)
         self.write_rows(100, now, participating)
 
+        status = self.app.experiment_status()
+        condition = status["experiment"]["conditions"]["2:0"]
+        self.assertEqual(condition["status"], "active")
+        self.app.stop_run()
         status = self.app.experiment_status()
         condition = status["experiment"]["conditions"]["2:0"]
         self.assertEqual(condition["status"], "partial")
