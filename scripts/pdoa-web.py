@@ -30,6 +30,7 @@ TAG_LAYOUT = [
 DISTANCES_M = list(range(2, 31, 2))
 ROTATIONS_DEG = [0, 90, 180, 270]
 RAW_FIELDS = ["time", "tag", "a16", "seq", "range_cm", "pdoa_deg", "x_cm", "y_cm", "clk_ppm", "t_us"]
+TAG_STALE_AFTER_S = 60
 
 
 HTML = r"""<!doctype html>
@@ -77,6 +78,7 @@ HTML = r"""<!doctype html>
     .tag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 12px; }
     .tag { display: grid; grid-template-columns: 1fr; gap: 3px; padding: 10px; border: 1px solid #aab4ba; border-radius: 6px; color: #59666e; background: #ffffff; font-size: 13px; font-variant-numeric: tabular-nums; }
     .tag.ready { border-color: #28784a; color: #173b26; background: #edf8f1; }
+    .tag.stale { border-color: #b78316; color: #5a4108; background: #fff6da; }
     .tag strong { font-weight: 750; }
     .tag-angle { color: #1b2329; font-size: 16px; font-weight: 750; }
     .tag-status { grid-column: 1 / -1; color: #5d6971; font-size: 11px; }
@@ -346,16 +348,18 @@ HTML = r"""<!doctype html>
     }
 
     function renderTags(tags) {
-      readyTags = tags.map(tag => tag.tag);
+      readyTags = tags.filter(tag => tag.age_s <= 1).map(tag => tag.tag);
       const byName = Object.fromEntries(tags.map(tag => [tag.tag, tag]));
       el('tag-grid').replaceChildren(...tagLayout.map(([name, bearing]) => {
         const item = document.createElement('div');
         const tag = byName[name];
-        item.className = `tag${tag ? ' ready' : ''}`;
-        item.innerHTML = `<span class="tag-angle">${bearing}°</span><strong>${name}</strong><span class="tag-status">${tag ? `last sample ${tag.age_s}s` : 'No samples'}</span>`;
+        const statusClass = tag ? (tag.age_s <= 1 ? ' ready' : ' stale') : '';
+        const statusText = !tag ? 'No samples' : tag.age_s <= 1 ? 'Online' : `Last seen ${tag.age_s}s ago`;
+        item.className = `tag${statusClass}`;
+        item.innerHTML = `<span class="tag-angle">${bearing}°</span><strong>${name}</strong><span class="tag-status">${statusText}</span>`;
         return item;
       }));
-      el('ready-count').textContent = `${tags.length} / 9 ready`;
+      el('ready-count').textContent = `${readyTags.length} / 9 ready`;
       el('start-run').className = 'primary';
       el('start-run').textContent = 'Start acquisition';
 
@@ -678,7 +682,7 @@ class App:
                 row["range_std_cm"] = "0.0"
             sample_time = parse_sample_time(row.get("time")) or now
             row["age_s"] = max(0, int(now - sample_time))
-            if row["age_s"] <= 5 and tag in {item["tag"] for item in TAG_LAYOUT}:
+            if row["age_s"] <= TAG_STALE_AFTER_S and tag in {item["tag"] for item in TAG_LAYOUT}:
                 tags.append(row)
 
         return {"running": self.node_ready(), "device": self.device, "log_file": path.name if path else None, "tags": tags}
