@@ -1,0 +1,1957 @@
+{
+  "id": "ground-height-4m-20260830-222436",
+  "name": "ground-height-4m",
+  "created_at": "2026-08-30T22:24:36+02:00",
+  "node_height_m": 4,
+  "target_samples": 200,
+  "distances_m": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30
+  ],
+  "rotations_deg": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "tags": [
+    {
+      "tag": "dw00",
+      "bearing_deg": 15
+    },
+    {
+      "tag": "dw01",
+      "bearing_deg": 35
+    },
+    {
+      "tag": "dw02",
+      "bearing_deg": 55
+    },
+    {
+      "tag": "dw03",
+      "bearing_deg": 75
+    },
+    {
+      "tag": "dw04",
+      "bearing_deg": 90
+    },
+    {
+      "tag": "dw05",
+      "bearing_deg": 105
+    },
+    {
+      "tag": "dw06",
+      "bearing_deg": 125
+    },
+    {
+      "tag": "dw07",
+      "bearing_deg": 145
+    },
+    {
+      "tag": "dw08",
+      "bearing_deg": 165
+    }
+  ],
+  "conditions": {
+    "2:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d002m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T17:35:54+02:00"
+    },
+    "2:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d002m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:37:58+02:00"
+    },
+    "2:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d002m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:46:34+02:00"
+    },
+    "2:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d002m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw03",
+        "dw04",
+        "dw05"
+      ],
+      "completed_at": "2026-09-01T17:53:26+02:00"
+    },
+    "4:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d004m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:17:36+02:00"
+    },
+    "4:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d004m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:19:00+02:00"
+    },
+    "4:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d004m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:21:44+02:00"
+    },
+    "4:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d004m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00"
+      ],
+      "completed_at": "2026-09-01T17:26:01+02:00"
+    },
+    "6:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d006m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw01"
+      ],
+      "completed_at": "2026-09-01T17:06:20+02:00"
+    },
+    "6:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d006m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:08:27+02:00"
+    },
+    "6:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d006m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:10:25+02:00"
+    },
+    "6:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d006m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:12:22+02:00"
+    },
+    "8:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d008m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T16:54:32+02:00"
+    },
+    "8:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d008m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:55:47+02:00"
+    },
+    "8:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d008m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:57:41+02:00"
+    },
+    "8:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d008m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T17:00:01+02:00"
+    },
+    "10:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d010m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T16:42:45+02:00"
+    },
+    "10:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d010m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:44:03+02:00"
+    },
+    "10:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d010m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:45:49+02:00"
+    },
+    "10:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d010m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:47:38+02:00"
+    },
+    "12:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d012m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T16:26:03+02:00"
+    },
+    "12:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d012m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:27:53+02:00"
+    },
+    "12:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d012m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:29:50+02:00"
+    },
+    "12:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d012m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:31:32+02:00"
+    },
+    "14:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d014m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T16:09:00+02:00"
+    },
+    "14:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d014m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T16:14:22+02:00"
+    },
+    "14:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d014m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:15:44+02:00"
+    },
+    "14:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d014m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [],
+      "completed_at": "2026-09-01T16:18:18+02:00"
+    },
+    "16:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d016m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T15:43:19+02:00"
+    },
+    "16:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d016m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T15:49:04+02:00"
+    },
+    "16:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d016m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T15:54:05+02:00"
+    },
+    "16:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d016m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T15:58:27+02:00"
+    },
+    "18:0": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d018m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T15:20:04+02:00"
+    },
+    "18:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d018m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T15:22:44+02:00"
+    },
+    "18:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d018m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T15:31:49+02:00"
+    },
+    "18:270": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d018m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T15:37:04+02:00"
+    },
+    "20:0": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d020m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T13:42:08+02:00"
+    },
+    "20:90": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d020m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T13:44:57+02:00"
+    },
+    "20:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d020m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T13:57:31+02:00"
+    },
+    "20:270": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d020m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T14:07:41+02:00"
+    },
+    "22:0": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d022m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T13:09:35+02:00"
+    },
+    "22:90": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d022m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T13:14:13+02:00"
+    },
+    "22:180": {
+      "status": "complete",
+      "attempts": 1,
+      "file": "d022m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 200
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T13:22:30+02:00"
+    },
+    "22:270": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d022m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 1
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07"
+      ],
+      "completed_at": "2026-09-01T13:28:08+02:00"
+    },
+    "24:0": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d024m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw01",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T12:30:37+02:00"
+    },
+    "24:90": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d024m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T12:35:20+02:00"
+    },
+    "24:180": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d024m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw03",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T12:47:50+02:00"
+    },
+    "24:270": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d024m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T12:59:59+02:00"
+    },
+    "26:0": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d026m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw01",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T11:15:11+02:00"
+    },
+    "26:90": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d026m_r090_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw01",
+        "dw04",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T11:25:45+02:00"
+    },
+    "26:180": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d026m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 154,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw01",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T12:01:39+02:00"
+    },
+    "26:270": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d026m_r270_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T12:17:15+02:00"
+    },
+    "28:0": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d028m_r000_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T10:21:04+02:00"
+    },
+    "28:90": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d028m_r090_run01.csv",
+      "counts": {
+        "dw00": 0,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T10:32:12+02:00"
+    },
+    "28:180": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d028m_r180_run01.csv",
+      "counts": {
+        "dw00": 200,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw03",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T10:43:23+02:00"
+    },
+    "28:270": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d028m_r270_run01.csv",
+      "counts": {
+        "dw00": 0,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T10:50:24+02:00"
+    },
+    "30:0": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d030m_r000_run01.csv",
+      "counts": {
+        "dw00": 0,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T09:29:01+02:00"
+    },
+    "30:90": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d030m_r090_run01.csv",
+      "counts": {
+        "dw00": 0,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 200,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw06",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T09:49:14+02:00"
+    },
+    "30:180": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d030m_r180_run01.csv",
+      "counts": {
+        "dw00": 0,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 0,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T09:56:24+02:00"
+    },
+    "30:270": {
+      "status": "partial",
+      "attempts": 1,
+      "file": "d030m_r270_run01.csv",
+      "counts": {
+        "dw00": 0,
+        "dw01": 200,
+        "dw02": 200,
+        "dw03": 200,
+        "dw04": 200,
+        "dw05": 200,
+        "dw06": 200,
+        "dw07": 0,
+        "dw08": 0
+      },
+      "participating_tags": [
+        "dw00",
+        "dw01",
+        "dw02",
+        "dw03",
+        "dw04",
+        "dw05",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "missing_tags": [
+        "dw00",
+        "dw06",
+        "dw07",
+        "dw08"
+      ],
+      "completed_at": "2026-09-01T10:05:55+02:00"
+    }
+  },
+  "active_run": null
+}
