@@ -136,7 +136,7 @@ class ExperimentTest(unittest.TestCase):
         self.app.drone_log_fp = output.open("w", newline="")
         self.app.drone_log_writer = csv.DictWriter(self.app.drone_log_fp, fieldnames=self.app._drone_fields())
         self.app.drone_log_writer.writeheader()
-        self.app._write_drone_row({"fc_timestamp_ms": "100", "bearing_deg": "90"})
+        self.app._write_drone_row({"fc_timestamp_ms": "100", "yaw_deg": "90"})
         self.app.drone_log_fp.close()
 
         with output.open(newline="") as fp:

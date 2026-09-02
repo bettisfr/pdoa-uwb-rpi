@@ -34,7 +34,8 @@ RAW_FIELDS = ["time", "tag", "a16", "seq", "range_cm", "pdoa_deg", "x_cm", "y_cm
 TAG_STALE_AFTER_S = 60
 DRONE_BINARY = Path("/opt/dji-rpi-payload/.build/3.9.2/dji_rpi_telemetry")
 DRONE_SOURCE_FIELDS = [
-    "fc_timestamp_ms", "drone_model", "firmware", "bearing_deg",
+    "fc_timestamp_ms", "drone_model", "firmware", "roll_deg", "pitch_deg", "yaw_deg",
+    "heading_deg", "rtk_yaw_deg", "rtk_yaw_status",
     "fused_lat_deg", "fused_lon_deg", "fused_alt_m", "height_fusion_m",
     "rtk_lat_deg", "rtk_lon_deg", "rtk_h_m", "rtk_status",
 ]
@@ -648,10 +649,10 @@ DRONE_HTML = r"""<!doctype html>
   <script>
     const layout = [['dw00',15],['dw01',35],['dw02',55],['dw03',75],['dw04',90],['dw05',105],['dw06',125],['dw07',145],['dw08',165]];
     const el = id => document.getElementById(id);
-    const fields = [['fused_lat_deg','Latitude'],['fused_lon_deg','Longitude'],['height_fusion_m','Height (m)'],['bearing_deg','Bearing'],['rtk_lat_deg','RTK latitude'],['rtk_lon_deg','RTK longitude'],['rtk_h_m','RTK H (m)'],['rtk_status','RTK status'],['gt_x_m','Local X (m)'],['gt_y_m','Local Y (m)']];
+    const fields = [['roll_deg','Roll'],['pitch_deg','Pitch'],['yaw_deg','Yaw'],['heading_deg','Heading'],['height_fusion_m','Height (m)'],['fused_lat_deg','Latitude'],['fused_lon_deg','Longitude'],['rtk_lat_deg','RTK latitude'],['rtk_lon_deg','RTK longitude'],['rtk_h_m','RTK H (m)'],['rtk_status','RTK status'],['gt_x_m','Local X (m)'],['gt_y_m','Local Y (m)']];
     async function api(path, options = {}) { const response = await fetch(path, {cache:'no-store', ...options}); const data = await response.json(); if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`); return data; }
     function rtkLabel(raw) { const status=Number(raw); if (status === 50) return 'Fixed'; if (status === 34) return 'Float'; if (status === 16) return 'Single point'; return 'Unavailable'; }
-    function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key === 'bearing_deg') return `${raw}°`; if (key === 'rtk_status') return rtkLabel(raw); return raw; }
+    function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key.endsWith('_deg')) return `${raw}°`; if (key === 'rtk_status') return rtkLabel(raw); return raw; }
     function render(data) {
       const state = data.state || 'stopped'; el('state').textContent = state; el('state').className = `status ${state}`;
       el('log-file').textContent = data.log_file ? `${state} · ${data.log_file}` : 'No recording';
