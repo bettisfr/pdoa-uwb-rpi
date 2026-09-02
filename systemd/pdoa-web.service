@@ -11,7 +11,7 @@ SupplementaryGroups=dialout
 WorkingDirectory=/opt/pdoa-uwb-rpi
 Environment=PYTHONUNBUFFERED=1
 UMask=0002
-ExecStart=/opt/pyenv/bin/python /opt/pdoa-uwb-rpi/scripts/pdoa-web.py --host 0.0.0.0 --port 8080 --device /dev/ttyACM1 --stddev-window 100
+ExecStart=/opt/pyenv/bin/python /opt/pdoa-uwb-rpi/scripts/pdoa-web.py --host 0.0.0.0 --port 8080 --device /dev/serial/by-id/usb-Nordic_Semiconductor_nRF52_USB_Demo_000000000000-if00 --stddev-window 100
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true

@@ -7,7 +7,7 @@ BIN := pdoa-monitor
 SRC := src/pdoa_monitor.c
 WEB_HOST ?= 0.0.0.0
 WEB_PORT ?= 8080
-WEB_DEVICE ?= /dev/ttyACM1
+WEB_DEVICE ?= /dev/serial/by-id/usb-Nordic_Semiconductor_nRF52_USB_Demo_000000000000-if00
 STDDEV_WINDOW ?= 100
 
 .PHONY: all clean run web
