@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 import importlib.util
 import tempfile
 import time
@@ -130,6 +130,7 @@ class ExperimentTest(unittest.TestCase):
         self.app._tail_uwb = lambda: None
         self.app.uwb_latest = {
             "dw00": {"time": now, "range_cm": "200", "pdoa_deg": "15", "x_cm": "1", "y_cm": "2", "t_us": "1000"},
+            "dw01": {"time": (datetime.now().astimezone() - timedelta(seconds=1)).isoformat(timespec="milliseconds"), "range_cm": "250", "pdoa_deg": "35"},
             "dw07": {"time": now, "range_cm": "300", "pdoa_deg": "145", "x_cm": "3", "y_cm": "4", "t_us": "2000"},
         }
         self.app.drone_log_fp = output.open("w", newline="")

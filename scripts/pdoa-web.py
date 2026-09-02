@@ -39,6 +39,7 @@ DRONE_SOURCE_FIELDS = [
     "rtk_lat_deg", "rtk_lon_deg", "rtk_h_m", "rtk_status",
 ]
 DRONE_REFERENCE_FIELDS = ["origin_lat_deg", "origin_lon_deg", "q4_lat_deg", "q4_lon_deg"]
+DRONE_UWB_WINDOW_S = 0.1
 
 
 HTML = r"""<!doctype html>
@@ -875,13 +876,13 @@ class App:
             if not row:
                 continue
             sample_time = parse_sample_time(row.get("time")) or now
-            age_s = max(0, int(now - sample_time))
-            if age_s > 1:
+            age_s = max(0.0, now - sample_time)
+            if age_s > DRONE_UWB_WINDOW_S:
                 continue
             tag_values = dict(values)
             tag_values["tag"] = item["tag"]
             tag_values["uwb_time"] = row.get("time", "")
-            tag_values["uwb_age_s"] = age_s
+            tag_values["uwb_age_s"] = f"{age_s:.3f}"
             for field in ("range_cm", "pdoa_deg", "x_cm", "y_cm", "t_us"):
                 tag_values[field] = row.get(field, "")
             self.drone_log_writer.writerow(tag_values)
