@@ -602,7 +602,7 @@ DRONE_HTML = r"""<!doctype html>
     .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
     .metric { min-height: 52px; padding: 9px; border: 1px solid #d6dce0; border-radius: 6px; background: #fbfcfc; }
     .metric span { display: block; color: #5d6971; font-size: 11px; } .metric strong { display: block; margin-top: 2px; font-size: 15px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-    .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 14px; }
+    .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-top: 14px; }
     button { min-height: 48px; border: 0; border-radius: 6px; font: inherit; font-weight: 750; cursor: pointer; }
     button:disabled { cursor: not-allowed; opacity: .42; }
     .primary { color: #fff; background: #176b3a; } .warning { color: #2f2306; background: #e5b83f; } .danger { color: #fff; background: #9f3841; }
@@ -612,12 +612,14 @@ DRONE_HTML = r"""<!doctype html>
     .reference-point span { color: #5d6971; font-size: 11px; }
     .reference-point strong { margin-top: 2px; font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
     .reference-grid button { min-width: 118px; min-height: 58px; }
+    .reference-status { display: grid; justify-items: end; gap: 2px; }
+    .reference-status .muted { font-size: 11px; }
     .tag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 12px; }
     .tag { display: grid; gap: 3px; min-height: 94px; padding: 10px; border: 1px solid #aab4ba; border-radius: 6px; color: #59666e; background: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
     .tag.ready { border-color: #28784a; color: #173b26; background: #edf8f1; } .tag.stale { border-color: #b78316; color: #5a4108; background: #fff6da; }
     .tag-angle { font-size: 16px; font-weight: 750; } .tag-status { color: #5d6971; font-size: 11px; }
     .muted { color: #5d6971; font-size: 13px; } .error { margin-top: 12px; color: #6d1820; font-size: 13px; }
-    @media (min-width: 600px) { .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tag-grid { grid-template-columns: repeat(9, 1fr); } .tag { text-align: center; padding: 10px 4px; } }
+    @media (min-width: 600px) { .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); } .controls { grid-template-columns: repeat(4, 1fr); } .tag-grid { grid-template-columns: repeat(9, 1fr); } .tag { text-align: center; padding: 10px 4px; } }
   </style>
 </head>
 <body>
@@ -625,7 +627,7 @@ DRONE_HTML = r"""<!doctype html>
   <main>
     <section>
       <div class="panel">
-        <div class="summary"><h2>Local reference</h2><span id="reference-state" class="muted">Not set</span></div>
+        <div class="summary"><h2>Local reference</h2><div class="reference-status"><span id="rtk-state" class="status">RTK unavailable</span><span id="reference-state" class="muted">Not set</span></div></div>
         <div class="reference-grid">
           <div class="reference-point"><span>O · Local (0, 0)</span><strong id="origin-value">Not captured</strong></div><button id="capture-origin" class="primary">Capture O</button>
           <div class="reference-point"><span>Q4 · +Y direction</span><strong id="q4-value">Not captured</strong></div><button id="capture-q4" class="primary">Capture Q4</button>
@@ -636,7 +638,7 @@ DRONE_HTML = r"""<!doctype html>
       <div class="panel">
         <div class="summary"><h2>Matrice 300 RTK</h2><span id="state" class="status">Stopped</span></div>
         <div id="metrics" class="metrics"></div>
-        <div class="controls"><button id="start" class="primary">Start</button><button id="pause" class="warning">Pause</button><button id="stop" class="danger">Stop</button></div>
+        <div class="controls"><button id="connect" class="primary">Connect</button><button id="start" class="primary">Start</button><button id="pause" class="warning">Pause</button><button id="stop" class="danger">Stop</button></div>
         <div id="log-file" class="muted" style="margin-top:10px">No recording</div>
         <div id="error" class="error"></div>
       </div>
@@ -648,17 +650,20 @@ DRONE_HTML = r"""<!doctype html>
     const el = id => document.getElementById(id);
     const fields = [['fused_lat_deg','Latitude'],['fused_lon_deg','Longitude'],['height_fusion_m','Height (m)'],['bearing_deg','Bearing'],['rtk_lat_deg','RTK latitude'],['rtk_lon_deg','RTK longitude'],['rtk_h_m','RTK H (m)'],['rtk_status','RTK status'],['gt_x_m','Local X (m)'],['gt_y_m','Local Y (m)']];
     async function api(path, options = {}) { const response = await fetch(path, {cache:'no-store', ...options}); const data = await response.json(); if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`); return data; }
-    function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key === 'bearing_deg') return `${raw}°`; if (key === 'rtk_status') return Number(raw) === 50 ? 'Fixed' : `Status ${raw}`; return raw; }
+    function rtkLabel(raw) { const status=Number(raw); if (status === 50) return 'Fixed'; if (status === 34) return 'Float'; if (status === 16) return 'Single point'; return 'Unavailable'; }
+    function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key === 'bearing_deg') return `${raw}°`; if (key === 'rtk_status') return rtkLabel(raw); return raw; }
     function render(data) {
       const state = data.state || 'stopped'; el('state').textContent = state; el('state').className = `status ${state}`;
       el('log-file').textContent = data.log_file ? `${state} · ${data.log_file}` : 'No recording';
       const values = {...(data.drone || {}), ...(data.ground_truth || {})}; el('metrics').replaceChildren(...fields.map(([key,label]) => { const box=document.createElement('div'); box.className='metric'; box.innerHTML=`<span>${label}</span><strong>${value(values,key)}</strong>`; return box; }));
+      const rtkStatus = data.drone && data.drone.rtk_status; const fixed = Number(rtkStatus) === 50; el('rtk-state').textContent = `RTK ${rtkLabel(rtkStatus)}`; el('rtk-state').className = `status ${fixed ? 'recording' : Number(rtkStatus) ? 'paused' : ''}`;
       const points = data.reference_points || {}; const formatPoint = prefix => points[`${prefix}_lat_deg`] === undefined ? 'Not captured' : `${points[`${prefix}_lat_deg`].toFixed(8)}, ${points[`${prefix}_lon_deg`].toFixed(8)}`; el('origin-value').textContent=formatPoint('origin'); el('q4-value').textContent=formatPoint('q4'); el('reference-state').textContent=data.reference ? `Ready · ${data.reference_baseline_m.toFixed(2)} m` : 'Capture O and Q4';
-      el('start').disabled = state === 'recording'; el('pause').disabled = state !== 'recording'; el('stop').disabled = state === 'stopped';
+      el('connect').disabled = state !== 'stopped'; el('start').disabled = state === 'recording'; el('pause').disabled = state !== 'recording'; el('stop').disabled = state === 'stopped';
       const tags = Object.fromEntries((data.tags || []).map(tag => [tag.tag, tag])); const live = Object.values(tags).filter(tag => tag.age_s <= 1).length; el('tag-count').textContent = `${live} / 9 live`;
       el('tags').replaceChildren(...layout.map(([name,bearing]) => { const tag=tags[name]; const cls=!tag ? '' : tag.age_s <= 1 ? ' ready' : ' stale'; const text=!tag ? 'No samples' : tag.age_s <= 1 ? 'Online' : `Last seen ${tag.age_s}s ago`; const card=document.createElement('div'); card.className=`tag${cls}`; card.innerHTML=`<span class="tag-angle">${bearing}°</span><strong>${name}</strong><span>${tag ? `${tag.range_cm} cm · ${tag.pdoa_deg}°` : '—'}</span><span class="tag-status">${text}</span>`; return card; }));
     }
     async function refresh() { try { el('error').textContent=''; render(await api('/api/drone')); } catch (error) { el('error').textContent=error.message || String(error); } }
+    el('connect').onclick = async () => { try { await api('/api/drone/connect', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
     el('start').onclick = async () => { try { await api('/api/drone/start', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
     el('pause').onclick = async () => { try { await api('/api/drone/pause', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
     el('stop').onclick = async () => { try { await api('/api/drone/stop', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
@@ -910,29 +915,39 @@ class App:
                         self.drone_log_fp = None
                         self.drone_log_writer = None
 
-    def start_drone_tracking(self):
+    def _open_drone_log(self):
+        self._reset_uwb_tail()
+        self.drone_dir.mkdir(exist_ok=True)
+        stamp = time.strftime("%Y%m%d_%H%M%S")
+        self.drone_log_path = self.drone_dir / f"drone_{stamp}.csv"
+        self.drone_log_fp = self.drone_log_path.open("w", newline="")
+        self.drone_log_writer = csv.DictWriter(self.drone_log_fp, fieldnames=self._drone_fields())
+        self.drone_log_writer.writeheader()
+        self.drone_log_fp.flush()
+
+    def connect_drone(self):
         with self.lock:
             if self.drone_process and self.drone_process.poll() is None:
-                self.drone_state = "recording"
                 return self.drone_status()
             if not DRONE_BINARY.is_file():
                 raise ValueError(f"Missing DJI telemetry binary: {DRONE_BINARY}")
-            self._reset_uwb_tail()
-            self.drone_dir.mkdir(exist_ok=True)
-            stamp = time.strftime("%Y%m%d_%H%M%S")
-            self.drone_log_path = self.drone_dir / f"drone_{stamp}.csv"
-            self.drone_log_fp = self.drone_log_path.open("w", newline="")
-            self.drone_log_writer = csv.DictWriter(self.drone_log_fp, fieldnames=self._drone_fields())
-            self.drone_log_writer.writeheader()
-            self.drone_log_fp.flush()
             self.drone_process = subprocess.Popen(
                 [str(DRONE_BINARY)], cwd=DRONE_BINARY.parent, stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1,
                 start_new_session=True,
             )
-            self.drone_state = "recording"
+            self.drone_state = "ready"
             self.drone_thread = threading.Thread(target=self._read_drone, args=(self.drone_process,), daemon=True)
             self.drone_thread.start()
+            return self.drone_status()
+
+    def start_drone_tracking(self):
+        with self.lock:
+            if not self.drone_process or self.drone_process.poll() is not None:
+                self.connect_drone()
+            if not self.drone_log_writer:
+                self._open_drone_log()
+            self.drone_state = "recording"
             return self.drone_status()
 
     def pause_drone_tracking(self):
@@ -1480,6 +1495,8 @@ def make_handler(app: App):
                 if path == "/api/start":
                     app.start_monitor()
                     self._json({"running": app.node_ready()})
+                elif path == "/api/drone/connect":
+                    self._json(app.connect_drone())
                 elif path == "/api/drone/start":
                     self._json(app.start_drone_tracking())
                 elif path == "/api/drone/pause":
