@@ -147,6 +147,19 @@ class ExperimentTest(unittest.TestCase):
         self.assertEqual(rows[0]["range_cm"], "200")
         self.assertEqual(rows[1]["pdoa_deg"], "145")
 
+    def test_ground_truth_requires_rtk_fixed_solution(self):
+        reference = {
+            "origin_lat_deg": 43.0,
+            "origin_lon_deg": 12.0,
+            "q4_lat_deg": 43.001,
+            "q4_lon_deg": 12.0,
+        }
+        row = {"rtk_lat_deg": "43.0001", "rtk_lon_deg": "12.0001"}
+        self.assertEqual(self.app._drone_ground_truth({**row, "rtk_status": "34"}, reference), {})
+        ground_truth = self.app._drone_ground_truth({**row, "rtk_status": "50"}, reference)
+        self.assertIn("gt_x_m", ground_truth)
+        self.assertIn("gt_y_m", ground_truth)
+
     def test_partial_run_records_missing_tag_and_advances(self):
         now = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
         participating = [item["tag"] for item in pdoa_web.TAG_LAYOUT[:-1]]

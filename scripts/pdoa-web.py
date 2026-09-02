@@ -40,6 +40,7 @@ DRONE_SOURCE_FIELDS = [
 ]
 DRONE_REFERENCE_FIELDS = ["origin_lat_deg", "origin_lon_deg", "q4_lat_deg", "q4_lon_deg"]
 DRONE_UWB_WINDOW_S = 0.1
+RTK_FIXED_STATUS = 50
 
 
 HTML = r"""<!doctype html>
@@ -647,7 +648,7 @@ DRONE_HTML = r"""<!doctype html>
     const el = id => document.getElementById(id);
     const fields = [['fused_lat_deg','Latitude'],['fused_lon_deg','Longitude'],['height_fusion_m','Height (m)'],['bearing_deg','Bearing'],['rtk_lat_deg','RTK latitude'],['rtk_lon_deg','RTK longitude'],['rtk_h_m','RTK H (m)'],['rtk_status','RTK status'],['gt_x_m','Local X (m)'],['gt_y_m','Local Y (m)']];
     async function api(path, options = {}) { const response = await fetch(path, {cache:'no-store', ...options}); const data = await response.json(); if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`); return data; }
-    function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key === 'bearing_deg') return `${raw}°`; return raw; }
+    function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key === 'bearing_deg') return `${raw}°`; if (key === 'rtk_status') return Number(raw) === 50 ? 'Fixed' : `Status ${raw}`; return raw; }
     function render(data) {
       const state = data.state || 'stopped'; el('state').textContent = state; el('state').className = `status ${state}`;
       el('log-file').textContent = data.log_file ? `${state} · ${data.log_file}` : 'No recording';
@@ -750,8 +751,8 @@ class App:
             raise ValueError("Reference point must be origin or q4")
         row = self.drone_latest or {}
         try:
-            if int(row.get("rtk_status", 0)) == 0:
-                raise ValueError("Waiting for a valid RTK solution")
+            if int(row.get("rtk_status", 0)) != RTK_FIXED_STATUS:
+                raise ValueError("Waiting for an RTK fixed solution")
             latitude = float(row["rtk_lat_deg"])
             longitude = float(row["rtk_lon_deg"])
             if latitude == 0 and longitude == 0:
@@ -796,7 +797,7 @@ class App:
         if not reference:
             return {}
         try:
-            if int(drone_row.get("rtk_status", 0)) == 0:
+            if int(drone_row.get("rtk_status", 0)) != RTK_FIXED_STATUS:
                 return {}
             latitude = float(drone_row["rtk_lat_deg"])
             longitude = float(drone_row["rtk_lon_deg"])
