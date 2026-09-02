@@ -124,6 +124,28 @@ class ExperimentTest(unittest.TestCase):
         self.app.device = str(self.root / "missing-device")
         self.assertFalse(self.app.node_ready())
 
+    def test_drone_log_uses_one_row_per_live_tag_at_each_tick(self):
+        output = self.root / "drone.csv"
+        now = datetime.now().astimezone().isoformat(timespec="milliseconds")
+        self.app._tail_uwb = lambda: None
+        self.app.uwb_latest = {
+            "dw00": {"time": now, "range_cm": "200", "pdoa_deg": "15", "x_cm": "1", "y_cm": "2", "t_us": "1000"},
+            "dw07": {"time": now, "range_cm": "300", "pdoa_deg": "145", "x_cm": "3", "y_cm": "4", "t_us": "2000"},
+        }
+        self.app.drone_log_fp = output.open("w", newline="")
+        self.app.drone_log_writer = csv.DictWriter(self.app.drone_log_fp, fieldnames=self.app._drone_fields())
+        self.app.drone_log_writer.writeheader()
+        self.app._write_drone_row({"fc_timestamp_ms": "100", "bearing_deg": "90"})
+        self.app.drone_log_fp.close()
+
+        with output.open(newline="") as fp:
+            rows = list(csv.DictReader(fp))
+        self.assertEqual(len(rows), 2)
+        self.assertEqual([row["tag"] for row in rows], ["dw00", "dw07"])
+        self.assertEqual({row["fc_timestamp_ms"] for row in rows}, {"100"})
+        self.assertEqual(rows[0]["range_cm"], "200")
+        self.assertEqual(rows[1]["pdoa_deg"], "145")
+
     def test_partial_run_records_missing_tag_and_advances(self):
         now = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
         participating = [item["tag"] for item in pdoa_web.TAG_LAYOUT[:-1]]

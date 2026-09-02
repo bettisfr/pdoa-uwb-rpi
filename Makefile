@@ -7,7 +7,7 @@ BIN := pdoa-monitor
 SRC := src/pdoa_monitor.c
 WEB_HOST ?= 0.0.0.0
 WEB_PORT ?= 8080
-WEB_DEVICE ?= /dev/ttyACM0
+WEB_DEVICE ?= /dev/ttyACM1
 STDDEV_WINDOW ?= 100
 
 .PHONY: all clean run web

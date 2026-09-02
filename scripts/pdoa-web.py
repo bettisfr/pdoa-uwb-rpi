@@ -3,6 +3,7 @@ import argparse
 from collections import defaultdict, deque
 import csv
 from datetime import datetime
+import io
 import json
 import math
 import os
@@ -31,6 +32,13 @@ DISTANCES_M = list(range(2, 31, 2))
 ROTATIONS_DEG = [0, 90, 180, 270]
 RAW_FIELDS = ["time", "tag", "a16", "seq", "range_cm", "pdoa_deg", "x_cm", "y_cm", "clk_ppm", "t_us"]
 TAG_STALE_AFTER_S = 60
+DRONE_BINARY = Path("/opt/dji-rpi-payload/.build/3.9.2/dji_rpi_telemetry")
+DRONE_SOURCE_FIELDS = [
+    "fc_timestamp_ms", "drone_model", "firmware", "bearing_deg",
+    "fused_lat_deg", "fused_lon_deg", "fused_alt_m", "height_fusion_m",
+    "rtk_lat_deg", "rtk_lon_deg", "rtk_h_m", "rtk_status",
+]
+DRONE_REFERENCE_FIELDS = ["origin_lat_deg", "origin_lon_deg", "q4_lat_deg", "q4_lon_deg"]
 
 
 HTML = r"""<!doctype html>
@@ -570,6 +578,97 @@ HTML = r"""<!doctype html>
 """
 
 
+DRONE_HTML = r"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>Drone Tracking</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #1b2329; background: #f4f6f7; }
+    header { display: flex; align-items: center; justify-content: space-between; min-height: 58px; padding: 10px 16px; border-bottom: 1px solid #cbd2d7; background: #fff; }
+    h1, h2 { margin: 0; } h1 { font-size: 18px; } h2 { font-size: 15px; text-transform: uppercase; color: #53616a; }
+    main { width: min(100%, 720px); margin: 0 auto; padding: 16px 16px 32px; }
+    section { padding: 18px 0; border-bottom: 1px solid #d6dce0; }
+    .panel { padding: 16px; border: 1px solid #cbd2d7; border-radius: 8px; background: #fff; }
+    .summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .status { color: #59666e; font-size: 13px; font-weight: 750; text-transform: uppercase; }
+    .status.recording { color: #176b3a; } .status.paused { color: #9a721b; }
+    .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+    .metric { min-height: 52px; padding: 9px; border: 1px solid #d6dce0; border-radius: 6px; background: #fbfcfc; }
+    .metric span { display: block; color: #5d6971; font-size: 11px; } .metric strong { display: block; margin-top: 2px; font-size: 15px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 14px; }
+    button { min-height: 48px; border: 0; border-radius: 6px; font: inherit; font-weight: 750; cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .42; }
+    .primary { color: #fff; background: #176b3a; } .warning { color: #2f2306; background: #e5b83f; } .danger { color: #fff; background: #9f3841; }
+    .back { color: #355d7a; font-size: 13px; font-weight: 700; text-decoration: none; }
+    .reference-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; margin-top: 14px; }
+    .reference-point { display: grid; min-height: 58px; align-content: center; padding: 9px; border: 1px solid #d6dce0; border-radius: 6px; background: #fbfcfc; }
+    .reference-point span { color: #5d6971; font-size: 11px; }
+    .reference-point strong { margin-top: 2px; font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .reference-grid button { min-width: 118px; min-height: 58px; }
+    .tag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 12px; }
+    .tag { display: grid; gap: 3px; min-height: 94px; padding: 10px; border: 1px solid #aab4ba; border-radius: 6px; color: #59666e; background: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .tag.ready { border-color: #28784a; color: #173b26; background: #edf8f1; } .tag.stale { border-color: #b78316; color: #5a4108; background: #fff6da; }
+    .tag-angle { font-size: 16px; font-weight: 750; } .tag-status { color: #5d6971; font-size: 11px; }
+    .muted { color: #5d6971; font-size: 13px; } .error { margin-top: 12px; color: #6d1820; font-size: 13px; }
+    @media (min-width: 600px) { .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tag-grid { grid-template-columns: repeat(9, 1fr); } .tag { text-align: center; padding: 10px 4px; } }
+  </style>
+</head>
+<body>
+  <header><h1>Drone Tracking</h1><a class="back" href="/">Field runs</a></header>
+  <main>
+    <section>
+      <div class="panel">
+        <div class="summary"><h2>Local reference</h2><span id="reference-state" class="muted">Not set</span></div>
+        <div class="reference-grid">
+          <div class="reference-point"><span>O · Local (0, 0)</span><strong id="origin-value">Not captured</strong></div><button id="capture-origin" class="primary">Capture O</button>
+          <div class="reference-point"><span>Q4 · +Y direction</span><strong id="q4-value">Not captured</strong></div><button id="capture-q4" class="primary">Capture Q4</button>
+        </div>
+      </div>
+    </section>
+    <section>
+      <div class="panel">
+        <div class="summary"><h2>Matrice 300 RTK</h2><span id="state" class="status">Stopped</span></div>
+        <div id="metrics" class="metrics"></div>
+        <div class="controls"><button id="start" class="primary">Start</button><button id="pause" class="warning">Pause</button><button id="stop" class="danger">Stop</button></div>
+        <div id="log-file" class="muted" style="margin-top:10px">No recording</div>
+        <div id="error" class="error"></div>
+      </div>
+    </section>
+    <section><div class="summary"><h2>UWB tags</h2><strong id="tag-count" class="muted">0 / 9 live</strong></div><div id="tags" class="tag-grid"></div></section>
+  </main>
+  <script>
+    const layout = [['dw00',15],['dw01',35],['dw02',55],['dw03',75],['dw04',90],['dw05',105],['dw06',125],['dw07',145],['dw08',165]];
+    const el = id => document.getElementById(id);
+    const fields = [['fused_lat_deg','Latitude'],['fused_lon_deg','Longitude'],['height_fusion_m','Height (m)'],['bearing_deg','Bearing'],['rtk_lat_deg','RTK latitude'],['rtk_lon_deg','RTK longitude'],['rtk_h_m','RTK H (m)'],['rtk_status','RTK status'],['gt_x_m','Local X (m)'],['gt_y_m','Local Y (m)']];
+    async function api(path, options = {}) { const response = await fetch(path, {cache:'no-store', ...options}); const data = await response.json(); if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`); return data; }
+    function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key === 'bearing_deg') return `${raw}°`; return raw; }
+    function render(data) {
+      const state = data.state || 'stopped'; el('state').textContent = state; el('state').className = `status ${state}`;
+      el('log-file').textContent = data.log_file ? `${state} · ${data.log_file}` : 'No recording';
+      const values = {...(data.drone || {}), ...(data.ground_truth || {})}; el('metrics').replaceChildren(...fields.map(([key,label]) => { const box=document.createElement('div'); box.className='metric'; box.innerHTML=`<span>${label}</span><strong>${value(values,key)}</strong>`; return box; }));
+      const points = data.reference_points || {}; const formatPoint = prefix => points[`${prefix}_lat_deg`] === undefined ? 'Not captured' : `${points[`${prefix}_lat_deg`].toFixed(8)}, ${points[`${prefix}_lon_deg`].toFixed(8)}`; el('origin-value').textContent=formatPoint('origin'); el('q4-value').textContent=formatPoint('q4'); el('reference-state').textContent=data.reference ? `Ready · ${data.reference_baseline_m.toFixed(2)} m` : 'Capture O and Q4';
+      el('start').disabled = state === 'recording'; el('pause').disabled = state !== 'recording'; el('stop').disabled = state === 'stopped';
+      const tags = Object.fromEntries((data.tags || []).map(tag => [tag.tag, tag])); const live = Object.values(tags).filter(tag => tag.age_s <= 1).length; el('tag-count').textContent = `${live} / 9 live`;
+      el('tags').replaceChildren(...layout.map(([name,bearing]) => { const tag=tags[name]; const cls=!tag ? '' : tag.age_s <= 1 ? ' ready' : ' stale'; const text=!tag ? 'No samples' : tag.age_s <= 1 ? 'Online' : `Last seen ${tag.age_s}s ago`; const card=document.createElement('div'); card.className=`tag${cls}`; card.innerHTML=`<span class="tag-angle">${bearing}°</span><strong>${name}</strong><span>${tag ? `${tag.range_cm} cm · ${tag.pdoa_deg}°` : '—'}</span><span class="tag-status">${text}</span>`; return card; }));
+    }
+    async function refresh() { try { el('error').textContent=''; render(await api('/api/drone')); } catch (error) { el('error').textContent=error.message || String(error); } }
+    el('start').onclick = async () => { try { await api('/api/drone/start', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
+    el('pause').onclick = async () => { try { await api('/api/drone/pause', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
+    el('stop').onclick = async () => { try { await api('/api/drone/stop', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
+    el('capture-origin').onclick = async () => { try { await api('/api/drone/reference/origin', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
+    el('capture-q4').onclick = async () => { try { await api('/api/drone/reference/q4', {method:'POST'}); await refresh(); } catch (error) { el('error').textContent=error.message; } };
+    refresh(); setInterval(refresh, 500);
+  </script>
+</body>
+</html>
+"""
+
+
 def parse_sample_time(value):
     try:
         return datetime.fromisoformat(value).timestamp()
@@ -590,8 +689,285 @@ class App:
         self.monitor = None
         self.last_monitor_start = 0
         self.lock = threading.RLock()
+        self.drone_dir = root / "drone-logs"
+        self.drone_reference_path = self.drone_dir / "reference.json"
+        self.drone_process = None
+        self.drone_thread = None
+        self.drone_state = "stopped"
+        self.drone_latest = None
+        self.drone_log_path = None
+        self.drone_log_fp = None
+        self.drone_log_writer = None
+        self.uwb_latest = {}
+        self.uwb_tail_path = None
+        self.uwb_tail_header = ""
+        self.uwb_tail_offset = 0
         if auto_start:
             self.start_monitor()
+
+    @staticmethod
+    def _drone_fields():
+        return [
+            "time", *DRONE_SOURCE_FIELDS, *DRONE_REFERENCE_FIELDS,
+            "reference_baseline_m", "gt_x_m", "gt_y_m", "tag",
+            "uwb_time", "uwb_age_s", "range_cm", "pdoa_deg", "x_cm", "y_cm", "t_us",
+        ]
+
+    def _load_drone_reference(self):
+        try:
+            values = json.loads(self.drone_reference_path.read_text())
+            return {field: float(values[field]) for field in DRONE_REFERENCE_FIELDS}
+        except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+            return None
+
+    def _drone_reference_points(self):
+        try:
+            values = json.loads(self.drone_reference_path.read_text())
+            return {field: float(values[field]) for field in DRONE_REFERENCE_FIELDS if field in values}
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            return {}
+
+    def update_drone_reference(self, values):
+        try:
+            reference = {field: float(values[field]) for field in DRONE_REFERENCE_FIELDS}
+        except (KeyError, TypeError, ValueError):
+            raise ValueError("Origin and Q4 latitude/longitude are required")
+        if not (-90 <= reference["origin_lat_deg"] <= 90 and -90 <= reference["q4_lat_deg"] <= 90):
+            raise ValueError("Latitude must be between -90 and 90 degrees")
+        if not (-180 <= reference["origin_lon_deg"] <= 180 and -180 <= reference["q4_lon_deg"] <= 180):
+            raise ValueError("Longitude must be between -180 and 180 degrees")
+        if reference["origin_lat_deg"] == reference["q4_lat_deg"] and reference["origin_lon_deg"] == reference["q4_lon_deg"]:
+            raise ValueError("Origin and Q4 must be distinct points")
+        self.drone_dir.mkdir(exist_ok=True)
+        temporary = self.drone_reference_path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(reference, indent=2) + "\n")
+        temporary.replace(self.drone_reference_path)
+        return reference
+
+    def capture_drone_reference(self, point):
+        if point not in ("origin", "q4"):
+            raise ValueError("Reference point must be origin or q4")
+        row = self.drone_latest or {}
+        try:
+            if int(row.get("rtk_status", 0)) == 0:
+                raise ValueError("Waiting for a valid RTK solution")
+            latitude = float(row["rtk_lat_deg"])
+            longitude = float(row["rtk_lon_deg"])
+            if latitude == 0 and longitude == 0:
+                raise ValueError("Waiting for a valid RTK position")
+        except (KeyError, TypeError, ValueError) as error:
+            if isinstance(error, ValueError):
+                raise
+            raise ValueError("Waiting for a valid RTK position")
+        values = self._drone_reference_points()
+        values[f"{point}_lat_deg"] = latitude
+        values[f"{point}_lon_deg"] = longitude
+        self.drone_dir.mkdir(exist_ok=True)
+        temporary = self.drone_reference_path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(values, indent=2) + "\n")
+        temporary.replace(self.drone_reference_path)
+        return values
+
+    @staticmethod
+    def _local_xy(reference, latitude_deg, longitude_deg):
+        radius_m = 6378137.0
+        origin_lat_rad = math.radians(reference["origin_lat_deg"])
+        east_m = math.radians(longitude_deg - reference["origin_lon_deg"]) * radius_m * math.cos(origin_lat_rad)
+        north_m = math.radians(latitude_deg - reference["origin_lat_deg"]) * radius_m
+        q4_east_m = math.radians(reference["q4_lon_deg"] - reference["origin_lon_deg"]) * radius_m * math.cos(origin_lat_rad)
+        q4_north_m = math.radians(reference["q4_lat_deg"] - reference["origin_lat_deg"]) * radius_m
+        length_m = math.hypot(q4_east_m, q4_north_m)
+        if length_m < 0.01:
+            raise ValueError("Origin and Q4 are too close")
+        y_east = q4_east_m / length_m
+        y_north = q4_north_m / length_m
+        return east_m * y_north - north_m * y_east, east_m * y_east + north_m * y_north
+
+    @staticmethod
+    def _reference_baseline_m(reference):
+        radius_m = 6378137.0
+        origin_lat_rad = math.radians(reference["origin_lat_deg"])
+        east_m = math.radians(reference["q4_lon_deg"] - reference["origin_lon_deg"]) * radius_m * math.cos(origin_lat_rad)
+        north_m = math.radians(reference["q4_lat_deg"] - reference["origin_lat_deg"]) * radius_m
+        return math.hypot(east_m, north_m)
+
+    def _drone_ground_truth(self, drone_row, reference):
+        if not reference:
+            return {}
+        try:
+            if int(drone_row.get("rtk_status", 0)) == 0:
+                return {}
+            latitude = float(drone_row["rtk_lat_deg"])
+            longitude = float(drone_row["rtk_lon_deg"])
+            if latitude == 0 and longitude == 0:
+                return {}
+            x_m, y_m = self._local_xy(reference, latitude, longitude)
+            return {"gt_x_m": f"{x_m:.3f}", "gt_y_m": f"{y_m:.3f}"}
+        except (KeyError, TypeError, ValueError):
+            return {}
+
+    def _reset_uwb_tail(self):
+        path = self.latest_log()
+        self.uwb_tail_path = path
+        self.uwb_tail_header = ""
+        self.uwb_tail_offset = 0
+        self.uwb_latest = {row["tag"]: row for row in self.samples()["tags"]}
+        if not path:
+            return
+        try:
+            with path.open() as fp:
+                self.uwb_tail_header = fp.readline()
+                fp.seek(0, os.SEEK_END)
+                self.uwb_tail_offset = fp.tell()
+        except OSError:
+            self.uwb_tail_path = None
+
+    def _tail_uwb(self):
+        path = self.latest_log()
+        if path != self.uwb_tail_path:
+            self._reset_uwb_tail()
+            return
+        if not path or not self.uwb_tail_header:
+            return
+        try:
+            with path.open() as fp:
+                fp.seek(self.uwb_tail_offset)
+                lines = fp.readlines()
+                self.uwb_tail_offset = fp.tell()
+        except OSError:
+            return
+        known_tags = {item["tag"] for item in TAG_LAYOUT}
+        for line in lines:
+            try:
+                row = next(csv.DictReader(io.StringIO(self.uwb_tail_header + line)))
+            except (csv.Error, StopIteration):
+                continue
+            if row.get("tag") in known_tags and self._valid_row(row):
+                self.uwb_latest[row["tag"]] = row
+
+    def _drone_tags(self):
+        self._tail_uwb()
+        now = time.time()
+        tags = []
+        for tag, row in sorted(self.uwb_latest.items()):
+            value = dict(row)
+            sample_time = parse_sample_time(value.get("time")) or now
+            value["age_s"] = max(0, int(now - sample_time))
+            if value["age_s"] <= TAG_STALE_AFTER_S:
+                tags.append(value)
+        return tags
+
+    def _write_drone_row(self, drone_row):
+        if not self.drone_log_writer:
+            return
+        values = {field: "" for field in self._drone_fields()}
+        values["time"] = datetime.now().astimezone().isoformat(timespec="milliseconds")
+        values.update({field: drone_row.get(field, "") for field in DRONE_SOURCE_FIELDS})
+        reference = self._load_drone_reference()
+        if reference:
+            values.update(reference)
+            values["reference_baseline_m"] = f"{self._reference_baseline_m(reference):.3f}"
+            values.update(self._drone_ground_truth(drone_row, reference))
+        self._tail_uwb()
+        now = time.time()
+        for item in TAG_LAYOUT:
+            row = self.uwb_latest.get(item["tag"])
+            if not row:
+                continue
+            sample_time = parse_sample_time(row.get("time")) or now
+            age_s = max(0, int(now - sample_time))
+            if age_s > 1:
+                continue
+            tag_values = dict(values)
+            tag_values["tag"] = item["tag"]
+            tag_values["uwb_time"] = row.get("time", "")
+            tag_values["uwb_age_s"] = age_s
+            for field in ("range_cm", "pdoa_deg", "x_cm", "y_cm", "t_us"):
+                tag_values[field] = row.get(field, "")
+            self.drone_log_writer.writerow(tag_values)
+        self.drone_log_fp.flush()
+
+    def _read_drone(self, process):
+        try:
+            for row in csv.DictReader(process.stdout):
+                if not row.get("fc_timestamp_ms"):
+                    continue
+                with self.lock:
+                    self.drone_latest = dict(row)
+                    if self.drone_state == "recording":
+                        self._write_drone_row(row)
+        finally:
+            with self.lock:
+                if process is self.drone_process:
+                    self.drone_process = None
+                    self.drone_thread = None
+                    if self.drone_state != "stopped":
+                        self.drone_state = "stopped"
+                    if self.drone_log_fp:
+                        self.drone_log_fp.close()
+                        self.drone_log_fp = None
+                        self.drone_log_writer = None
+
+    def start_drone_tracking(self):
+        with self.lock:
+            if self.drone_process and self.drone_process.poll() is None:
+                self.drone_state = "recording"
+                return self.drone_status()
+            if not DRONE_BINARY.is_file():
+                raise ValueError(f"Missing DJI telemetry binary: {DRONE_BINARY}")
+            self._reset_uwb_tail()
+            self.drone_dir.mkdir(exist_ok=True)
+            stamp = time.strftime("%Y%m%d_%H%M%S")
+            self.drone_log_path = self.drone_dir / f"drone_{stamp}.csv"
+            self.drone_log_fp = self.drone_log_path.open("w", newline="")
+            self.drone_log_writer = csv.DictWriter(self.drone_log_fp, fieldnames=self._drone_fields())
+            self.drone_log_writer.writeheader()
+            self.drone_log_fp.flush()
+            self.drone_process = subprocess.Popen(
+                [str(DRONE_BINARY)], cwd=DRONE_BINARY.parent, stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1,
+                start_new_session=True,
+            )
+            self.drone_state = "recording"
+            self.drone_thread = threading.Thread(target=self._read_drone, args=(self.drone_process,), daemon=True)
+            self.drone_thread.start()
+            return self.drone_status()
+
+    def pause_drone_tracking(self):
+        with self.lock:
+            if not self.drone_process or self.drone_process.poll() is not None:
+                raise ValueError("Drone tracking is not running")
+            self.drone_state = "paused"
+            return self.drone_status()
+
+    def stop_drone_tracking(self):
+        with self.lock:
+            process = self.drone_process
+            self.drone_state = "stopped"
+            if self.drone_log_fp:
+                self.drone_log_fp.close()
+                self.drone_log_fp = None
+                self.drone_log_writer = None
+            if process and process.poll() is None:
+                os.killpg(process.pid, signal.SIGTERM)
+            return self.drone_status()
+
+    def drone_status(self):
+        self.ensure_monitor()
+        reference = self._load_drone_reference()
+        return {
+            "state": self.drone_state,
+            "running": bool(self.drone_process and self.drone_process.poll() is None),
+            "log_file": self.drone_log_path.name if self.drone_log_path else None,
+            "drone": self.drone_latest,
+            "reference": reference,
+            "reference_points": self._drone_reference_points(),
+            "reference_baseline_m": self._reference_baseline_m(reference) if reference else None,
+            "ground_truth": self._drone_ground_truth(self.drone_latest or {}, reference),
+            "tags": self._drone_tags(),
+            "uwb_running": self.node_ready(),
+            "uwb_device": self.device,
+        }
 
     def latest_log(self):
         logs = sorted(self.log_dir.glob("pdoa_*.csv"), key=lambda path: path.stat().st_mtime, reverse=True)
@@ -1072,8 +1448,18 @@ def make_handler(app: App):
                 self.send_header("Cache-Control", "no-store")
                 self.end_headers()
                 self.wfile.write(body)
+            elif path == "/drone":
+                body = DRONE_HTML.encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(body)
             elif path == "/api/samples":
                 self._json(app.samples())
+            elif path == "/api/drone":
+                self._json(app.drone_status())
             elif path == "/api/experiment":
                 self._json(app.experiment_status())
             elif path == "/api/run/summary":
@@ -1092,6 +1478,18 @@ def make_handler(app: App):
                 if path == "/api/start":
                     app.start_monitor()
                     self._json({"running": app.node_ready()})
+                elif path == "/api/drone/start":
+                    self._json(app.start_drone_tracking())
+                elif path == "/api/drone/pause":
+                    self._json(app.pause_drone_tracking())
+                elif path == "/api/drone/stop":
+                    self._json(app.stop_drone_tracking())
+                elif path == "/api/drone/reference":
+                    self._json(app.update_drone_reference(body))
+                elif path == "/api/drone/reference/origin":
+                    self._json(app.capture_drone_reference("origin"))
+                elif path == "/api/drone/reference/q4":
+                    self._json(app.capture_drone_reference("q4"))
                 elif path == "/api/stop":
                     app.stop_monitor()
                     self._json({"running": app.node_ready()})

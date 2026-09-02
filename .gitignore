@@ -3,6 +3,7 @@ backups/
 build/
 pdoa-monitor
 logs/
+drone-logs/
 datasets/
 __pycache__/
 hardware/dwm1002-stand/*.stl
