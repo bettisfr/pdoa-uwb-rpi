@@ -654,7 +654,7 @@ DRONE_HTML = r"""<!doctype html>
     function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key.endsWith('_deg')) return `${raw}°`; if (key === 'rtk_status') return rtkLabel(raw); return raw; }
     function render(data) {
       const state = data.state || 'stopped'; el('state').textContent = state; el('state').className = `status ${state}`;
-      el('log-file').textContent = data.log_file ? `${state} · ${data.log_file}` : 'No recording';
+      el('log-file').textContent = data.log_file ? `${state} · ${data.log_file} · ${data.records_saved || 0} records` : state === 'ready' ? 'Connected · no recording' : 'No recording';
       const values = {...(data.drone || {}), ...(data.ground_truth || {})}; el('metrics').replaceChildren(...fields.map(([key,label]) => { const box=document.createElement('div'); box.className='metric'; box.innerHTML=`<span>${label}</span><strong>${value(values,key)}</strong>`; return box; }));
       const rtkStatus = data.drone && data.drone.rtk_status; const fixed = Number(rtkStatus) === 50; el('rtk-state').textContent = `RTK ${rtkLabel(rtkStatus)}`; el('rtk-state').className = `status ${fixed ? 'recording' : Number(rtkStatus) ? 'paused' : ''}`;
       const points = data.reference_points || {}; const formatPoint = prefix => points[`${prefix}_lat_deg`] === undefined ? 'Not captured' : `${points[`${prefix}_lat_deg`].toFixed(8)}, ${points[`${prefix}_lon_deg`].toFixed(8)}`; el('origin-value').textContent=formatPoint('origin'); el('q4-value').textContent=formatPoint('q4'); el('reference-state').textContent=data.reference ? `Ready · ${data.reference_baseline_m.toFixed(2)} m` : 'Capture O and Q4';
@@ -705,6 +705,7 @@ class App:
         self.drone_log_path = None
         self.drone_log_fp = None
         self.drone_log_writer = None
+        self.drone_records_saved = 0
         self.uwb_latest = {}
         self.uwb_tail_path = None
         self.uwb_tail_header = ""
@@ -892,6 +893,7 @@ class App:
             for field in ("range_cm", "pdoa_deg", "x_cm", "y_cm", "t_us"):
                 tag_values[field] = row.get(field, "")
             self.drone_log_writer.writerow(tag_values)
+            self.drone_records_saved += 1
         self.drone_log_fp.flush()
 
     def _read_drone(self, process):
@@ -924,6 +926,7 @@ class App:
         self.drone_log_writer = csv.DictWriter(self.drone_log_fp, fieldnames=self._drone_fields())
         self.drone_log_writer.writeheader()
         self.drone_log_fp.flush()
+        self.drone_records_saved = 0
 
     def connect_drone(self):
         with self.lock:
@@ -976,6 +979,7 @@ class App:
             "state": self.drone_state,
             "running": bool(self.drone_process and self.drone_process.poll() is None),
             "log_file": self.drone_log_path.name if self.drone_log_path else None,
+            "records_saved": self.drone_records_saved,
             "drone": self.drone_latest,
             "reference": reference,
             "reference_points": self._drone_reference_points(),

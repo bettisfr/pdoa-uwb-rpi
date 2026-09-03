@@ -143,6 +143,7 @@ class ExperimentTest(unittest.TestCase):
             rows = list(csv.DictReader(fp))
         self.assertEqual(len(rows), 2)
         self.assertEqual([row["tag"] for row in rows], ["dw00", "dw07"])
+        self.assertEqual(self.app.drone_records_saved, 2)
         self.assertEqual({row["fc_timestamp_ms"] for row in rows}, {"100"})
         self.assertEqual(rows[0]["range_cm"], "200")
         self.assertEqual(rows[1]["pdoa_deg"], "145")
