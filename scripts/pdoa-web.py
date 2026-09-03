@@ -648,7 +648,7 @@ DRONE_HTML = r"""<!doctype html>
   <script>
     const layout = [['dw00',15],['dw01',35],['dw02',55],['dw03',75],['dw04',90],['dw05',105],['dw06',125],['dw07',145],['dw08',165]];
     const el = id => document.getElementById(id);
-    const fields = [['roll_deg','Roll'],['pitch_deg','Pitch'],['yaw_deg','Yaw'],['rtk_yaw_deg','RTK yaw'],['height_fusion_m','Height (m)'],['fused_lat_deg','Latitude'],['fused_lon_deg','Longitude'],['rtk_lat_deg','RTK latitude'],['rtk_lon_deg','RTK longitude'],['rtk_h_m','RTK H (m)'],['rtk_status','RTK status'],['gt_x_m','Local X (m)'],['gt_y_m','Local Y (m)']];
+    const fields = [['roll_deg','Roll'],['pitch_deg','Pitch'],['yaw_deg','Yaw'],['height_fusion_m','Height (m)'],['fused_lat_deg','Latitude'],['fused_lon_deg','Longitude'],['rtk_lat_deg','RTK latitude'],['rtk_lon_deg','RTK longitude'],['rtk_h_m','RTK H (m)'],['rtk_status','RTK status'],['gt_x_m','Local X (m)'],['gt_y_m','Local Y (m)']];
     async function api(path, options = {}) { const response = await fetch(path, {cache:'no-store', ...options}); const data = await response.json(); if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`); return data; }
     function rtkLabel(raw) { const status=Number(raw); if (status === 50) return 'Fixed'; if (status === 34) return 'Float'; if (status === 16) return 'Single point'; return 'Unavailable'; }
     function value(drone, key) { const raw = drone && drone[key]; if (raw === undefined || raw === null || raw === '') return '—'; if (key.endsWith('_deg')) return `${raw}°`; if (key === 'rtk_status') return rtkLabel(raw); return raw; }
