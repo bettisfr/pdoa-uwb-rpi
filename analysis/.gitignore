@@ -1,0 +1,6 @@
+# Derived analysis tables and temporary plotting outputs.
+csv/*
+!csv/.gitkeep
+plots/*
+!plots/.gitkeep
+src/__pycache__/
